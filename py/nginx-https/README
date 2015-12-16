@@ -1,0 +1,4 @@
+- http-server.py # represents backend http service
+- nginx.conf # configuration file for nginx. use load-balancing and https feature.
+- server.key, server.crt # http://www.akadia.com/services/ssh_test_certificate.html
+- install server.crt # http://askubuntu.com/questions/73287/how-do-i-install-a-root-certificate

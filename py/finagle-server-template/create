@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+#coding:utf-8
+#Copyright (C) dirlt
+
+import os
+def ReadTemplate(fname):
+    pwd=os.path.dirname(os.path.realpath(__file__))
+    return open(os.path.join(pwd,'template',fname)).read()
+
+POM_TEMPLATE=ReadTemplate('tpom.xml')
+
+SBT_TEMPLATE=ReadTemplate('tbuild.sbt')
+
+LOG4J_RELEASE_TEMPLATE=ReadTemplate('tlog4j.properties')
+
+LOG4J_DEBUG_TEMPLATE=ReadTemplate('tlog4j.debug.properties')
+
+DEBUG_SCALA=ReadTemplate('tdebug.scala')
+
+RELEASE_SCALA=ReadTemplate('trelease.scala')
+
+ORACLE_TEMPLATE=ReadTemplate('toracle.sh')
+
+MAIN_TEMPLATE=ReadTemplate('tmain.scala')
+
+import sys
+def WriteFileInteractive(fname, content):
+    # if os.path.exists(fname):
+    #     print '%s exists already, override it?[y/n]'%(fname)
+    #     yn = sys.stdin.readline()
+    #     if not yn.lower().startswith('y'):
+    #         return False
+    open(fname,'w').write(content)
+    return True
+    
+def generate(groupId,artifactId,mainClass):
+    cps=groupId.split('.')
+    cps.append(artifactId)
+    project = artifactId
+    os.system('mkdir -p %s'%(project))
+    
+    open('%s/pom.xml'%(project),'w').write(POM_TEMPLATE%(locals()))
+    WriteFileInteractive('%s/oracle'%(project),ORACLE_TEMPLATE%(locals()))
+    os.system('chmod u+x %s/oracle'%(project))
+    
+    # sbt is deprecated.
+    # open('%s/build.sbt'%(project),'w').write(SBT_TEMPLATE%(locals()))
+    
+    os.system('mkdir -p %s/src/main/java/%s/'%(project,'/'.join(cps)))
+    os.system('mkdir -p %s/src/test/java/%s/'%(project,'/'.join(cps)))
+    os.system('mkdir -p %s/src/main/scala/%s/'%(project,'/'.join(cps)))
+    os.system('mkdir -p %s/src/test/scala/%s/'%(project,'/'.join(cps)))
+    os.system('mkdir -p %s/src/main/proto/'%(project))
+    os.system('mkdir -p %s/src/main/resources/'%(project))
+    os.system('mkdir -p %s/src/test/resources/'%(project))
+    WriteFileInteractive('%s/src/main/scala/%s/%sServer.scala'%(project,'/'.join(cps),mainClass), 
+                         MAIN_TEMPLATE%(locals()))
+    
+    # provide some config files.    
+    os.system('mkdir -p %s/config/'%(project))
+    
+    WriteFileInteractive('%s/config/log4j.properties'%(project),LOG4J_RELEASE_TEMPLATE%(locals()))
+    WriteFileInteractive('%s/config/log4j.debug.properties'%(project),LOG4J_DEBUG_TEMPLATE%(locals()))
+    WriteFileInteractive('%s/config/debug.scala'%(project), DEBUG_SCALA%(locals()))
+    WriteFileInteractive('%s/config/release.scala'%(project), RELEASE_SCALA%(locals()))
+
+    # provide some control scripts.
+    os.system('mkdir -p %s/scripts/'%(project))
+    
+import sys
+if __name__=='__main__':
+    if(not len(sys.argv) == 3):
+        print 'create a new jvm project in java or scala'
+        print 'usage:%s groupId artifactId'%(sys.argv[0])
+    else:        
+        (groupId, artifactId) = (sys.argv[1], sys.argv[2])
+        mainClass = artifactId[0].upper() + artifactId[1:]
+        generate(groupId, artifactId, mainClass)
+

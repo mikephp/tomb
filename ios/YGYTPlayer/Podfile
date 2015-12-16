@@ -1,0 +1,6 @@
+# pod "YYKit"
+pod "YYWebImage"
+pod 'AFNetworking'
+pod "FMDB"
+pod "MJRefresh"
+pod "youtube-ios-player-helper", :git => 'https://github.com/youtube/youtube-ios-player-helper.git'

@@ -1,0 +1,21 @@
+{% if user and not user.is_anonymous %}
+  <a>Hello, {{ user.get_full_name }}!</a>
+  <br>
+  <a href="/logout">Logout</a>
+{% else %}
+<ul>
+  {% if auth_fail %}
+  <p>Authenticate Failed: username = {{ username }}, password = {{ password }}</p>
+  {% endif %}
+  <li><a href="{% url 'social:begin' 'google-oauth2' %}?next={{ next|escape }}">Login with Google+</a></li>
+  <li><a href="{% url 'social:begin' 'facebook' %}?next={{ next|escape }}">Login with Facebook</a></li>
+  <li>
+    <form action="?next={{ next|escape }}" method="post">{% csrf_token %}
+      <label>Username:</label><input type="text" name="username" value="" id="username"/>
+      <label>Password:</label><input type="password" name="password" value="" id="password"/>
+      <input type="submit" value="login" />
+    </form>
+  </li>
+  <li>Don't have account, <a href="/register/?next={{ next|escape }}">sign up</a></li>
+</ul>
+{% endif %}

@@ -1,0 +1,197 @@
+========== ads 广告
+> 谷歌广告 https://developers.google.com/ads/?hl=en
+googleAD | com/google/ads/ |
+
+> 百度广告 http://baidu.com
+bdads | com/baidu/mobads |
+
+> 多盟 http://www.domob.cn/site/view/page/SDK.htm
+domob | cn/domob/android |
+
+> 芒果 http://www.adsmogo.com/download
+mongo | com/adsmogo |
+
+> Inmobi http://www.inmobi.com/sdk/
+inmobi | com/inmobi |
+
+# > 友盟广告 http://umeng.com
+# umads | com/umengAd |
+
+> 阿里妈妈 http://dev.alimama.com/
+alimama | com/taobao/newxp;com/taobao/munion;com/alimama/mobile/sdk |
+
+> AdView https://github.com/adview/AdviewSDK_Android/tree/master/src/com/kyview
+adview | com/kyview/ |
+
+# > 腾讯广点通 http://wiki.open.qq.com/wiki/mobile/SDK%E4%B8%8B%E8%BD%BD
+# tcads | com/tencent/open/ |
+
+> 易传媒 http://mobile.adchina.com/
+adchina | com/adchina |
+
+# > 秒针系统 http://www.miaozhen.com/MobileMonitor.html
+# miaozhen | |
+
+# > 安客诚 http://www.acxiom.cn/
+# acxiom | |
+
+# > 缔元信 http://www.dratio.com/
+# dratio | |
+
+> Admaster http://dev.admaster.com.cn/doc/trackmaster/v1/cn/sdk/android.html
+# admaster | | http://admaster.mobi
+
+# > ADPush http://www.adpush.cn/
+# adpush | |
+
+========== analysis 统计分析
+> 友盟统计 http://dev.umeng.com/
+umana | com/umeng/analytics;com/umeng/mobclickcpp;com/umeng/a |
+
+> 腾讯统计 http://mta.qq.com/mta/ctr_index/census
+tcana | com/tencent/stat |
+
+> 谷歌统计 http://www.google.cn/intl/zh-CN_ALL/analytics/index.html
+GA | com/google/analytics |
+
+> 百度统计 http://mtj.baidu.com/web/welcome/sdk
+bdana | com/baidu/mobstat/ |
+
+> Flurry https://developer.yahoo.com/flurry/
+flurry | com/flurry |
+
+> TalkingData https://www.talkingdata.com/app/document_web/index.jsp?statistics
+tkdata | com/tendcloud/tenddata |
+
+> LeanCloud https://leancloud.cn/docs/sdk_down.html
+leancd | com/avos/avosstatistics |
+
+> 数据之眼 http://wiki.dataeye.com/doc/doc.html?Android
+dataeye | com/dataeye/ |
+
+> 诸葛IO https://docs.zhugeio.com/help/developer/Android
+zhugeio | com/zhuge/ |
+
+> fir.im http://fir.im/
+BugHD | im/fir/firsdk;im/fir/sdk |
+
+> OneAPM http://www.oneapm.com/mi/android.html
+OneAPM | com/blueware/agent/android |
+
+> 基调网络 http://www.tingyun.com/
+networkbench | com/networkbench/agent/ |
+
+> Critterism http://docs.crittercism.com/android/android.html
+Critterism | com/crittercism/android/ |
+
+> NewRelic http://newrelic.com/
+NewRelic | com/newrelic/agent/android |
+
+========== social 社交
+> 百度社交 http://developer.baidu.com/wiki/index.php?title=docs/frontia/guide-android/overview
+bdsocial | com/baidu/android/socialservice |
+
+> 友盟社交 http://dev.umeng.com/social/android/detail-share
+umsocial | com/umeng/socialize/ |
+
+> ShareSDK http://www.mob.com/>/download
+sharesdk | cn/sharesdk/ |
+
+# > ShareSMS http://www.mob.com/>/download
+# sharesms | cn/smssdk/ |
+
+# > ShareREC http://www.mob.com/>/download
+# sharerec | cn/sharerec/ |
+
+> 新浪微博 http://open.weibo.com/wiki/SDK
+weibo | com/weibo/sdk;com/sina/weibo/sdk |
+
+# > 腾讯微博 http://wiki.open.qq.com/wiki/mobile/SDK%E4%B8%8B%E8%BD%BD
+# tcweibo | com/tencent/open |
+
+# > QZone http://wiki.open.qq.com/wiki/mobile/SDK%E4%B8%8B%E8%BD%BD
+# qzone | com/tencent/open |
+
+> 微信 http://open.weixin.qq.com/zh_CN/htmledition/res/dev/document/sdk/android/index.html
+weixin | com/tencent/mm |
+
+========== push 推送
+> 百度Push http://developer.baidu.com/wiki/index.php?title=docs/frontia/guide-android/overview
+bdpush | com/baidu/android/pushservice |
+
+> 小米Push http://dev.xiaomi.com/doc/?p=544
+xmpush | com/xiaomi/push |
+
+> 友盟Push http://dev.umeng.com/message
+umpush | com/umeng/message/ |
+
+> 腾讯信鸽 http://developer.xg.qq.com/index.php/Android_SDK%E5%BF%AB%E9%80%9F%E6%8C%87%E5%8D%97
+xinge | com/tencent/android/tpush |
+
+> 极光推送 http://docs.jpush.io/
+jpush | cn/jpush/android/ |
+
+> 个推 http://docs.getui.com/pages/viewpage.action?pageId=589866
+getui | com/igexin/sdk/ |
+
+> 爱心推 http://www.ixintui.com/
+ixintui | com/ixintui/ |
+
+> LeanCloud https://leancloud.cn/docs/sdk_down.html
+lcpush | com/avos/avospush |
+
+> 云巴 http://yunba.io/developers/
+yunba | io/yunba/ |
+
+> Parse https://www.parse.com/
+Parse | com/parse/ |
+
+> UrbanAirship https://www.urbanairship.com/
+urban | com/urbanairship/push |
+
+========== im 即时通信
+> 融云 http://www.rongcloud.cn/
+rong | io/rong/imlib;io/rong/message |
+
+> 云之讯 http://www.ucpaas.com/
+ucpaas | com/yzx/ |
+
+> 逸创 http://developer.kf5.com/
+kf5 | com/kf5/;com/kf5sdk |
+
+> 环信 http://www.easemob.com/downloads
+easemob | com/easemob |
+
+> 友盟IM http://dev.umeng.com/openim/android/integration
+umim | com/umeng/openim |
+
+> 亲加 #
+gotye | com/gotye/api |
+
+> 悟空 #
+wk | com/alibaba/wukong/im |
+
+> 云容联 #
+yuntx | com/yuntongxun/ecsdk |
+
+> 云信 #
+yunxin | com/netease/nimlib/sdk |
+
+> LeanCloud #
+lcim | com/avos/avoscloud/im |
+
+> JChat #
+jchat | cn/jpush/im/android/api |
+
+> 云旺 #
+yunwg | com/alibaba/mobileim |
+
+> 腾讯IM #
+tcim | com/tencent/TIMConnListener;com/tencent/TIMManager |
+
+========== ecom 电商
+> 百川淘宝交易 http://baichuan.taobao.com/portal/detail.php?spm=a3c0d.7758105.3.4.tauS9b&name=trade
+bctrade | com/alibaba/sdk/android/trade |
+
+> 百川自建交易 http://baichuan.taobao.com/portal/detail.php?spm=a3c0d.7758105.3.4.tauS9b&name=trade
+bcopent | com/alibaba/sdk/android/opentrade |

@@ -1,0 +1,47 @@
+* finagle-server-template
+
+usage: *./create <groupId> <artifactId>* , for example
+
+#+BEGIN_EXAMPLE
+create com.umeng.dp echo
+#+END_EXAMPLE
+
+so we have 
+   - a project called "echo"
+   - namespace is "com.umeng.dp" 
+   - mainclass is "EchoServer"
+   - produce "echo.jar"
+
+the generated files are
+   - ./config
+     - ./config/log4j.properties
+     - ./config/log4j.debug.properties
+     - ./config/debug.scala
+     - ./config/release.scala
+   - ./scripts
+   - ./src
+     - ./src/test
+       - ./src/test/resources
+       - ./src/test/java/com/umeng/dp/echo
+       - ./src/test/scala/com/umeng/dp/echo/EchoServer.scala
+     - ./src/main
+       - ./src/main/resources
+       - ./src/main/proto
+       - ./src/main/java/com/umeng/dp/echo
+       - ./src/main/scala/com/umeng/dp/echo
+   - ./pom.xml
+   - ./oracle # powerful script.
+
+--------------------
+
+so about 'oracle', probably you don't need to change anything.
+
+it has following commands:
+   - start # run as daemon
+   - stop # stop daemon
+   - status
+   - run # run in foreground, which will use config/log4j.properties. support additional command arguments.
+   - debug # debug in foreground, which will use config/log4j.debug.properties. support additional command arguments.
+   - dist # make a distribution package, ready to deploy
+   - clean # remove distribution package
+

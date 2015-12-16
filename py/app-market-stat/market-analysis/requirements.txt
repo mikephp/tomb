@@ -1,0 +1,11 @@
+pymongo
+redis
+gevent
+biplist
+pyExcelerator
+lxml
+tinycss
+cssselect
+cairosvg
+pygal
+

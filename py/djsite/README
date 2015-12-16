@@ -1,0 +1,21 @@
+1. bookstore 如何使用Form, 如何在Admin界面添加数据
+2. uc 如何在python-social-oauth过程中保存额外信息.
+
+-----
+如果想同时支持native app和web的话. native app通常可以直接经过oauth验证，所以不一定需要访问server. 所以server如何保存native app完成的oauth验证?
+
+我们可以直接填写auth_user和social_auth_usersocialauth两个表。social_auth_usersocialauth是通过provider + uid来唯一关联到auth_user的。所以我们可以这样做:
+- insert into auth_user values(NULL, '', 0, 'x', '', '', '', 0, 1, datetime(), NULL);
+- insert into social_auth_usersocialauth values(NULL, 'google-oauth2', 'dirtysalt1987@gmail.com', '', 1);
+其中邮箱是google-oauth2的uid.
+
+```
+sqlite> .schema social_auth_usersocialauth
+CREATE TABLE "social_auth_usersocialauth" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "provider" varchar(32) NOT NULL, "uid" varchar(255) NOT NULL, "extra_data" text NOT NULL, "user_id" integer NOT NULL REFERENCES "auth_user" ("id"), UNIQUE ("provider", "uid"));
+CREATE INDEX "social_auth_usersocialauth_e8701ad4" ON "social_auth_usersocialauth" ("user_id");
+```
+
+```
+sqlite> .schema auth_user
+CREATE TABLE "auth_user" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "password" varchar(128) NOT NULL, "is_superuser" bool NOT NULL, "username" varchar(30) NOT NULL UNIQUE, "first_name" varchar(30) NOT NULL, "last_name" varchar(30) NOT NULL, "email" varchar(254) NOT NULL, "is_staff" bool NOT NULL, "is_active" bool NOT NULL, "date_joined" datetime NOT NULL, "last_login" datetime NULL);
+```

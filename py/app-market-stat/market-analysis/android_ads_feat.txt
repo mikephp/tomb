@@ -1,0 +1,90 @@
+========== misc 杂项
+umengExchange   |   com/umeng/newxp                                 |   http://ex.mobmore.com
+vitamio         |   io/vov/vitamio                                  |   vitamio
+weibo           |   com/weibo/sdk                                   |   api.weibo.com
+tencent_weibo   |   com/tencent/weibo                               |   open.t.qq.com/api
+qzone           |   com/tencent/qc                                  |   graph.qq.com;qzs.qq.com
+weixin          |   com/tencent/mm                                  |   libammsdk
+airwe           |   com/airwe                                       |   http://server.airwe.com
+bugHD           |   im/fir/firsdk;im/fir/sdk                        |   collector.bughd.com
+oneAPM          |   com/blueware/agent/android                      |   com.blueware.agent.android
+# 基调网络(听云APP)
+networkbench    |   com/networkbench/agent/impl                     |   redirect.networkbench.com/getMobileRedirectHost
+Critterism      |   crittercism/android                             |   appload.ingest.crittercism.com
+NewRelic        |   com/newrelic/agent/android                      |   com.newrelic.agent.android
+
+========== analysis 统计分析
+
+umengAnalytics  |   com/umeng/analytics                             |   http://*.umeng.co
+tencent_analyze |                                                   |   http://pingma.qq.com:80
+googleAnalytics |   com/google/analytics                            |   http://www.google-analytics.com
+baiduAnalytics  |   com/baidu/mobstat/                              |   http://hmma.baidu.com
+flurry          |   com/flurry                                      |   http://*.flurry.com
+talkingdata     |   com/tendcloud                                   |   http://tdcv3.talkingdata.net
+
+========== ads 广告
+# 谷歌广告
+googleAD        |   com/google/ads/                                 |   media.admob.com
+
+# 百度广告
+baidu           |   com/baidu/mobads                                |   http://mobads.baidu.com
+
+# 多盟
+domob           |   cn/domob/android                                |   http://r.domob.cn;duomeng.org;duomeng.cn;duomeng.net
+
+# 芒果
+mongo           |   com/adsmogo                                     |   http://api.adsmogo.net/;http://cfg.adsmogo.com
+
+adview          |   com/kyview/                                     |   http://adfill.adview.cn;http://report.adview.cn
+
+# 阿里妈妈
+alimama         |   com/taobao/newxp;com/taobao/munion;com/alimama/mobile/sdk  |  http://w.m.taobao.com
+
+Inmobi          |   com/inmobi                                      |   http://i.w.inmobi.com;https://rules-ltvp.inmobi.com/v2/rules.json
+
+umengAd         |   com/umengAd                                     |   http://www.uyunad.com/
+
+# 腾讯广点通
+tencent_ads     |   com/tencent/exmobwin;com/qq/e                   |   adv.app.qq.com;http://sdk.e.qq.com
+
+
+========== social 社交
+
+
+baidusocial     |   com/baidu/sharesdk;com/baidu/cloudsdk           |   openapi.baidu.com/social
+umengsocial_only|   com/umeng/socialize/                            |   http://log.umsns.com/
+umengsocial_ana |                                                   |   http://log.umsns.com/
+sharesdk        |   cn/sharesdk/                                    |   http://*.sharesdk.cn
+mobcent         |   com/mobcent/                                    |
+appbyme         |   com/appbyme/android                             |
+Kamcord         |   com/kamcord/android                             |   com.kamcord.android
+everyplay       |   com/everyplay;com/Everyplay                     |   com.everyplay
+
+
+========== push 推送
+baidupush       |   com/baidu/android/pushservice;com/baidu/push    |   com.baidu.push
+xiaomipush      |   com/xiaomi/push                                 |
+umengpush       |   com/umeng/message/                              |   msg.umengcloud.com
+# 腾讯信鸽
+xinge           |   com/tencent/android/tpush                       |   com.tencent.android.tpush
+jpush           |   cn/jpush/android/                               |   jpush
+getui           |   com/igexin/                                     |   http://sdk.open.phone.igexin.com/
+ixintui         |   com/ixintui/push;com/ixintui/pushsdk            |   androidmis.ixintui.com
+AVOS            |   com/avos/avospush;com/avos/avospush/notification;com/avos/avospush/push;com/avos/avospush/session;com/avos/avoscloud/pushservice    |
+# 云巴
+yunba           |   io/yunba/android/core/YunBaReceiver;io/yunba/android/core/YunBaService    |
+parse           |   com/parse;com/parse/PushService;com/parse/ParsePushBroadcastReceiver;com/parse/GcmBroadcastReceiver    |
+urbanairship    |   com/urbanairship/push;com/urbanairship/push/ADMPushReceiver;com/urbanairship/push/GCMPushReceiver;com/urbanairship/push/PushService    |
+
+
+========== sharesdk 分享
+sharesdk_duanxin  | cn/smssdk/utils                                 |   http://sms.sharesdk.cn:5566/init/duid
+sharesdk_record   | cn/sharerec/biz                                 |   http://api.rec.mob.com
+sharesdk_share    | cn/sharesdk/framework/statistics                |   http://api.share.mob.com:80
+sharesdk_comment  | cn/sharesdk/socialization                       |   cn.sharesdk.socialization
+
+========== im 即时通信
+# 环信
+emchat          |  com/easemob/chat/EMChatService;com/easemob/chat/StartServiceReceiver    |
+# 融云
+rong            |  io/rong/imlib/push/PushService;io/rong/imlib/push/PushReceiver;io/rong/imlib/push/PushMessageReceiver;io/rong/imlib/notification;io/rong/imlib/push    |

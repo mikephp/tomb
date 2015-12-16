@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="9059" systemVersion="14F27" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="BYZ-38-t0r">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9049"/>
+    </dependencies>
+    <scenes>
+        <!--Play Video-->
+        <scene sceneID="tne-QT-ifu">
+            <objects>
+                <viewController title="Play Video" id="BYZ-38-t0r" customClass="ViewController" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="O4L-Ja-65S"/>
+                        <viewControllerLayoutGuide type="bottom" id="Kqy-af-gcA"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="mSZ-vd-K6l">
+                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                        <subviews>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pAV-Sc-XuB">
+                                <rect key="frame" x="20" y="20" width="113" height="30"/>
+                                <state key="normal" title="XCD Play Button"/>
+                                <connections>
+                                    <action selector="playXCDVideo:" destination="BYZ-38-t0r" eventType="touchUpInside" id="thD-FO-tku"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="df9-Ba-Svc">
+                                <rect key="frame" x="21" y="64" width="101" height="30"/>
+                                <state key="normal" title="AV Play Button"/>
+                                <connections>
+                                    <action selector="playAVPlayer:" destination="BYZ-38-t0r" eventType="touchUpInside" id="lNU-xW-rDd"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="3f1-xh-6zP">
+                                <rect key="frame" x="20" y="107" width="102" height="30"/>
+                                <state key="normal" title="VK Play Button"/>
+                                <connections>
+                                    <action selector="playVKVideo:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Nm4-Oc-QGz"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4W0-lk-Soe">
+                                <rect key="frame" x="20" y="152" width="132" height="30"/>
+                                <state key="normal" title="Google Play Button"/>
+                                <connections>
+                                    <action selector="playGoogleVideo:" destination="BYZ-38-t0r" eventType="touchUpInside" id="MJM-xo-9FH"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                    </view>
+                    <navigationItem key="navigationItem" title="Video Play" id="JiF-Kj-p0G"/>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="749" y="3"/>
+        </scene>
+        <!--Google Video-->
+        <scene sceneID="pBe-ra-5Gn">
+            <objects>
+                <viewController storyboardIdentifier="GoogleVideo" title="Google Video" id="itN-1t-JFn" customClass="YTPlayerVC" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="4cA-hc-LiY"/>
+                        <viewControllerLayoutGuide type="bottom" id="1OA-i1-9e3"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="Fom-0E-9Yc" customClass="YTPlayerView">
+                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                    </view>
+                    <connections>
+                        <outlet property="playerView" destination="Fom-0E-9Yc" id="4hu-oe-brf"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="pIF-k1-jWa" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="378" y="665"/>
+        </scene>
+    </scenes>
+</document>

@@ -1,0 +1,75 @@
+首先安装redis和python-redis. 本地上必须部署redis实例(port=6379), 使用redis db=1的数据库做存储。
+
+-----
+
+离线程序分为两个版本: console.py对应命令行, web.py对应网页版本。相对来说web版本使用效率可能会更高一些，允许多人通过网页访问输入。
+
+工作原理是从phone-boook.db不断读取没有标记的电话号码，查询这些电话号码的余额，写入数据库，直到所有电话号码都标记。
+
+console需要安装PIL组件，否则不能显示图片。
+
+启动网页版本的方法是
+1. sh setup.sh
+2. gunicorn -w 64 web:run
+3. 访问localhost:8000
+
+-----
+
+在线程序是一个webserver，需要安装flask，文件是svr.py. 请求过程如下：
+
+1. 客户使用手机号码请求 http://host/init?phone=<phone>[&cb=<callback>].
+- 其中cb为可选字段，如果带上cb的话那么返回jsonp格式，否则返回json格式。
+- json数据有下面三种可能：
+a. {'code': 1, 'msg':'get captcha faild'} 表示查询验证码失败（内部已经做过重试）
+b. {'code':0, 'msg':'bal', 'data': res} 系统中已经缓存了余额信息(res)。超时时间为1天。
+c. {'code':0, 'msg':'token', 'data': res} 系统返回token(res). 用于下一阶段的请求。
+- 如果客户端拿到token的话，那么验证码图片位置在 http://host/static/<token>.jpg
+
+2. 客户使用token和验证码code请求 http://host/query?token=<token>&code=<code>[&cb=<callback>]
+- cb作用和上面一样
+- json数据有下面两种可能：
+a. {'code': 1, 'msg': 'query balance failed'} 表示查询余额失败（内部已经做过重试）。但是客户端可以继续对这个URL做重试, token超时时间10分钟。
+b. {'code': 0, 'msg': 'bal', 'data': res[1]} 表示查询成功，余额在'data'字段。
+
+
+测试在线程序可以使用./svr.py直接运行，作为产品部署的话最好使用WSGI容器如gunicorn.
+1. gunicorn -w 64 svr:app # 如果添加参数使用-k event来启动的话效果会更好 :)
+2. 访问localhost:8000
+3. note(dirlt): 因为最后面有读取接近14K的页面，如果使用默认超时时间会出现gevent timedout情况。可以适当调大--keepalive(5)参数.
+
+-----
+
+note(dirlt @ 2015-03-20): 支持欧飞充值接口 http://ofapi.1000.com/ . 主要代码都在ofpay.py这个文件里面. 我将充值接口接入到svr.py之后，多增加了两个接口。
+
+todo(dirlt): 充值接口需要考虑安全性! 可以考虑用HTTPS + POST
+
+0. 微信支付请求 http://host/wx-charge?phone=<phone>[&cardnum=<cardnum>][&cb=<callback>]
+- cardnum 表示充值金额，理论上支持[1,2,5,10,20,30,50,100,300]. 但是我们限制金额必须>=30, 因为<30的话会有额外收费。
+- json数据格式为{code : <code>, msg: <msg> }
+a. code = -1, msg = 'wx gateway error' 表示微信网关错误
+b. code = -2, msg = 'database failed' 表示数据库操作失败
+c. code = 0, msg = <wx prepay id> 返回微信prepay id.
+
+1. 欧飞直冲请求 http://host/of-charge?phone=<phone>&uid=<uid>[&cardnum=<cardnum>][&cb=<callback>].
+- cardnum 表示充值金额，理论上支持[1,2,5,10,20,30,50,100,300]. 但是我们限制金额必须>=30, 因为<30的话会有额外收费。
+- json数据格式为{code : <code>, msg: <msg> }
+a. code = -1, msg = 'of gateway error' 表示欧飞网关错误
+b. code = -2, msg = <欧飞返回的错误信息>
+c. code = -3, msg = 'charged failed' 表示充值失败
+d. code = -4, msg = 'database failed' 表示操作数据库失败
+d. code = 0, msg = 'charging' 表示充值成功，但是还没有到账
+e. code = 1, msg = 'done' 表示充值成功且到账
+
+2. 查询历史 http://host/history?phone=<phone>[&period=<period>][&limit=<limit>][&cb=<callback>]
+- period 表示查询最近多长时间，默认是30天
+- limit 表示查询最近多少条记录，默认是10条，最大30
+
+-----
+
+note(dirlt @ 2015-4-14): 增加根据设备号查询sim卡号
+
+请求地址是 http://host/phone?device=<device>[&cb=<callback>].
+- device 表示设备编号
+- 返回json数据格式为{code : <code>, msg: <msg>, data: <data>}
+a. code = -1, msg = 'not found'
+b. code = 0, msg = 'found', data = '<phone-no>'

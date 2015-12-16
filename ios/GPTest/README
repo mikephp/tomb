@@ -1,0 +1,4 @@
+https://developers.google.com/identity/sign-in/ios/
+https://developers.google.com/identity/sign-in/android/
+https://developers.google.com/api-client-library/
+pip install --upgrade google-api-python-client

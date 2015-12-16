@@ -1,0 +1,4 @@
+#!/bin/bash
+rsync -avrz ~/repo/marketanalyzer2/market-analysis/ market-analysis/
+rsync -avrz ~/repo/marketanalyzer2/util/ util/
+rsync -avrz ~/repo/marketanalyzer2/extappinfo/ extappinfo/

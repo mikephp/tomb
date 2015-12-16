@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="9059" systemVersion="14F27" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9049"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <tableViewCell contentMode="scaleToFill" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" rowHeight="100" id="KGk-i7-Jjw" customClass="PlayListCell">
+            <rect key="frame" x="0.0" y="0.0" width="426" height="100"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+            <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="KGk-i7-Jjw" id="H2p-sc-9uM">
+                <rect key="frame" x="0.0" y="0.0" width="393" height="99"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <imageView userInteractionEnabled="NO" contentMode="redraw" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="sample-playlist" translatesAutoresizingMaskIntoConstraints="NO" id="BLU-8c-gwW">
+                        <rect key="frame" x="5" y="5" width="100" height="90"/>
+                        <constraints>
+                            <constraint firstAttribute="height" constant="90" id="Bss-uZ-Fkq"/>
+                            <constraint firstAttribute="width" constant="100" id="exc-6e-lUg"/>
+                        </constraints>
+                        <variation key="default">
+                            <mask key="constraints">
+                                <exclude reference="Bss-uZ-Fkq"/>
+                            </mask>
+                        </variation>
+                    </imageView>
+                    <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="top" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="8m8-sx-MxT">
+                        <rect key="frame" x="110" y="5" width="278" height="90"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Yoga With Adriene: 30 Days of Yoga" lineBreakMode="tailTruncation" numberOfLines="4" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WRm-rc-ajh">
+                                <rect key="frame" x="0.0" y="0.0" width="225" height="65"/>
+                                <fontDescription key="fontDescription" name="HelveticaNeue" family="Helvetica Neue" pointSize="14"/>
+                                <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <stackView opaque="NO" contentMode="scaleToFill" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="HuJ-tR-rPV">
+                                <rect key="frame" x="0.0" y="70" width="96" height="20"/>
+                                <subviews>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="jXi-fa-Ogy">
+                                        <rect key="frame" x="0.0" y="0.0" width="31" height="20"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                                        <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="view-512" translatesAutoresizingMaskIntoConstraints="NO" id="Unw-2e-YJL">
+                                        <rect key="frame" x="36" y="0.0" width="15" height="20"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="15" id="QYT-P2-etZ"/>
+                                            <constraint firstAttribute="height" constant="20" id="yeR-NX-DxR"/>
+                                        </constraints>
+                                    </imageView>
+                                    <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="history-512" translatesAutoresizingMaskIntoConstraints="NO" id="DKG-sR-afT">
+                                        <rect key="frame" x="56" y="0.0" width="15" height="20"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="20" id="KTR-Kw-UBw"/>
+                                            <constraint firstAttribute="width" constant="15" id="zWR-5O-KL9"/>
+                                        </constraints>
+                                    </imageView>
+                                    <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="bookmark-512" translatesAutoresizingMaskIntoConstraints="NO" id="RmR-3A-iIb">
+                                        <rect key="frame" x="76" y="0.0" width="20" height="20"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="20" id="sko-hH-7OE"/>
+                                            <constraint firstAttribute="width" constant="20" id="ttO-Yr-LjV"/>
+                                        </constraints>
+                                    </imageView>
+                                </subviews>
+                            </stackView>
+                        </subviews>
+                    </stackView>
+                </subviews>
+                <constraints>
+                    <constraint firstItem="BLU-8c-gwW" firstAttribute="top" secondItem="H2p-sc-9uM" secondAttribute="top" constant="5" id="79P-eU-TRK"/>
+                    <constraint firstAttribute="trailing" secondItem="8m8-sx-MxT" secondAttribute="trailing" constant="5" id="7aB-oT-Lqd"/>
+                    <constraint firstItem="8m8-sx-MxT" firstAttribute="leading" secondItem="BLU-8c-gwW" secondAttribute="trailing" constant="5" id="D4N-kR-BkI"/>
+                    <constraint firstItem="8m8-sx-MxT" firstAttribute="top" secondItem="BLU-8c-gwW" secondAttribute="top" id="Dit-54-nv3"/>
+                    <constraint firstItem="BLU-8c-gwW" firstAttribute="leading" secondItem="H2p-sc-9uM" secondAttribute="leading" constant="5" id="S9g-Wt-njP"/>
+                    <constraint firstItem="BLU-8c-gwW" firstAttribute="centerY" secondItem="H2p-sc-9uM" secondAttribute="centerY" id="Vbe-aP-o3q"/>
+                    <constraint firstItem="8m8-sx-MxT" firstAttribute="bottom" secondItem="BLU-8c-gwW" secondAttribute="bottom" id="Ywk-45-3ja"/>
+                </constraints>
+            </tableViewCellContentView>
+            <connections>
+                <outlet property="histIndicator" destination="DKG-sR-afT" id="7jj-98-2LD"/>
+                <outlet property="image" destination="BLU-8c-gwW" id="VyX-O9-AVi"/>
+                <outlet property="markIndicator" destination="RmR-3A-iIb" id="BRf-ZG-6NA"/>
+                <outlet property="title" destination="WRm-rc-ajh" id="BFf-l1-Mm5"/>
+                <outlet property="viewIndicator" destination="Unw-2e-YJL" id="xxq-qp-cmD"/>
+                <outlet property="views" destination="jXi-fa-Ogy" id="nq5-PW-drW"/>
+            </connections>
+            <point key="canvasLocation" x="278" y="198"/>
+        </tableViewCell>
+    </objects>
+    <resources>
+        <image name="bookmark-512" width="365" height="512"/>
+        <image name="history-512" width="512" height="439"/>
+        <image name="sample-playlist" width="320" height="180"/>
+        <image name="view-512" width="512" height="313"/>
+    </resources>
+</document>
