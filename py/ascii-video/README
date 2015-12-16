@@ -1,0 +1,3 @@
+Player video file in ascii :)
+mplayer -vo aa <video-file>
+mplayer -vo caca <video-file>
