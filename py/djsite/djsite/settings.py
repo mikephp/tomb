@@ -135,7 +135,9 @@ RQ_QUEUES = {
 #     },
 # }
 
+# google oauth2 to return uid
 USE_UNIQUE_USER_ID = True
+# ymuser.YMUser as user model.
 AUTH_USER_MODEL = 'ymuser.YMUser'
 
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/home/'
