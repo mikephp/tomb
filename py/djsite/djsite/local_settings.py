@@ -2,9 +2,9 @@
 #coding:utf-8
 #Copyright (C) dirlt
 
-DEBUG = False
-TEMPLATE_DEBUG = False
-ALLOWED_HOSTS = ['*']
+# DEBUG = False
+# TEMPLATE_DEBUG = False
+# ALLOWED_HOSTS = ['*']
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '962722732387-okdgpbfgsn283j59r4sc0ea9q782j2ir.apps.googleusercontent.com'
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = 'HuqUlDJiWN89SJLDa1Xlbcj1'
