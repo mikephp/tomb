@@ -27,21 +27,31 @@ file_md5 = 1f7e1395ccc314e684eb4f46f4112308
 """
 output_html = open('output.html').read()
 redirect_html = open('redirect.html').read()
-
+TEST = True
+CACHE = False
 import os
 class upload:
+    def GET(self):
+        return self.POST()
+
     def POST(self):
-        winput = web.input()
-        path = winput['imgfile_path']
-        ctype = winput['imgfile_content_type']
-        fsize = int(winput['imgfile_size'])
-        fmd5 = winput['imgfile_md5']
+        if not TEST:
+            winput = web.input()
+            path = winput['imgfile_path']
+            ctype = winput['imgfile_content_type']
+            fsize = int(winput['imgfile_size'])
+            fmd5 = winput['imgfile_md5']
+        else:
+            path = './sample.jpg'
+            ctype = 'image/jpeg'
+            fsize = 135 * 1024
+            fmd5 = 'md5-of-sample-jpg'
         if not ctype.startswith('image') or fsize > 8 * 1024 * 1024:
             return "Not image or image file is too large(<8MB)"
         image_html_file = '%s.html' % (fmd5)
         image_html_path = '/tmp/ascii_image_output/%s' % (image_html_file)
         # if cached.
-        if os.path.exists(image_html_path): return redirect_html % (locals())
+        if CACHE and os.path.exists(image_html_path): return redirect_html % (locals())
         # resize image.
         rim = Image.open(path).convert('RGB')
         W = 120

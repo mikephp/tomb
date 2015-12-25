@@ -16,7 +16,8 @@ def image2ascii_color(im): # simply output text. should come with colored output
 
 def ascii2image(ss, im, constrast = True, font_size = 4, delta = 1):
     # fnt = ImageFont.truetype('Courier_New.ttf', size = font_size)
-    fnt = ImageFont.truetype('Consolas.ttf', size = font_size)
+    # fnt = ImageFont.truetype('Consolas.ttf', size = font_size)
+    fnt = ImageFont.load_default()
     (sw, sh) = fnt.getsize(ss[0][0])
     (ew, eh) = im.size
     # print ew, eh, len(ss[0]), len(ss)
