@@ -156,6 +156,10 @@ def create_tables():
     #                             'keywords_text': 'text'},
     #                             {'default_language': 'english'},
     #                             {'language_override': 'lang' })
+"""
+db.fact.dropIndex('text_index')
+db.fact.createIndex({title:'text',labels_text:'text',keywords_text:'text'}, {weights: {title:10, labels_text:8, keywords_text:5}, name:'text_index'}, {'default_language':'english'}, {'language_override':'lang'})
+"""
 
 def do():
     create_tables()
