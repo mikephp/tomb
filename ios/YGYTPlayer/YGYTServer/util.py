@@ -121,7 +121,10 @@ def process_record(record):
     vs = []
     for vid in record['lessons']:
         if vid in CF.BANNED_VIDEO_IDS: continue
-        vi = video_info(vid)
+        try:
+            vi = video_info(vid)
+        except:
+            continue
         vs.append(vi)
         if not record['description']: record['description'] = vi['description']
     keywords = set()
