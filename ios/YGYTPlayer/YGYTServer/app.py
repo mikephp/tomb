@@ -42,9 +42,17 @@ class index:
             if lang == 'en': query['lang'] = {'$in': ['en', 'fr', 'de', 'es', 'it']}
             elif lang: query['lang'] = lang
         # print('query on mongo = %s' % query)
-        query['$text'] = {'$search': q}
-        rs = CF.FACT_TABLE.find(query, skip = s, limit = c, projection = ['title', 'description', 'viewcount', 'thumb', 'key', '_id', 'bigthumbhd'],
-                                sort = [('score', {'$meta': 'textScore'}）, ('viewcount', pymongo.DESCENDING)])
+        projection_list = ['title', 'description', 'viewcount', 'thumb', 'key', '_id', 'bigthumbhd']
+        sort_pred = [('viewcount', pymongo.DESCENDING)]
+        if q:
+            query['$text'] = {'$search': q}
+            projection_dict = {}
+            for x in projection_list: projection_dict[x] = True
+            projection_dict['score'] = {'$meta': 'textScore'}
+            sort_pred.insert(0, ('score', {'$meta': 'textScore'}))
+        else:
+            projection_dict = projection_list
+        rs = CF.FACT_TABLE.find(query, skip = s, limit = c, projection = projection_dict, sort = sort_pred)
         vds = []
         for r in rs:
             vd = {}
@@ -55,6 +63,7 @@ class index:
             vd['hdim'] = r['bigthumbhd']
             vd['id'] = r['key']
             vd['sid'] = str(r['_id'])
+            vd['keys'] = r.keys()
             vds.append(vd)
         js = {'vds': vds,
               'version': version}
