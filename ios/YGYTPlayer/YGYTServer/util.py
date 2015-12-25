@@ -130,7 +130,8 @@ def process_record(record):
         for k in vi['keywords']:
             keywords.add(k)
         viewcount += vi['viewcount']
-    # record['keywords'] = list(keywords)
+    record['keywords_text'] = ' '.join(keywords)
+    record['labels_text'] = ' '.join(record['labels'])
     record['viewcount'] = viewcount
     # videos
     nvs = []
@@ -147,6 +148,11 @@ def create_tables():
     CF.VIDEO_TABLE.create_index('key')
     CF.FACT_TABLE.create_index('key')
     CF.FACT_TABLE.create_index('lang')
+    CF.FACT_TABLE.create_index({'title':'text',
+                                'labels_text': 'text',
+                                'keywords_text': 'text'},
+                                {'default_language': 'english'},
+                                {'language_override': 'lang' })
 
 def do():
     create_tables()
