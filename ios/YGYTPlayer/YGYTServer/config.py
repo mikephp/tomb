@@ -3,7 +3,7 @@
 #Copyright (C) dirlt
 
 MONGO_URL = 'mongodb://127.0.0.1:27017'
-EXPIRE_INTERVAL = 3600 * 24 * 30
+EXPIRE_INTERVAL = 3600 * 24 * 365
 YOUTUBE_API_KEY = 'AIzaSyAxJCBgslg3f4sZ2_UAxdiQtpUoiqLrlas'
 # from gevent import monkey; monkey.patch_socket()
 
@@ -14,4 +14,4 @@ PLAYLIST_TABLE = DB.playlist
 VIDEO_TABLE = DB.video
 FACT_TABLE = DB.fact
 
-BANNED_VIDEO_IDS = ('-P-1wJFS5OM','PVmgtTsfrqs','k-YKHbfUW5U')
+BANNED_VIDEO_IDS = ('-P-1wJFS5OM','PVmgtTsfrqs','k-YKHbfUW5U', 'Sxv28EOUt5A','J0k-013A9TA')

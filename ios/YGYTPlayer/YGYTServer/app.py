@@ -28,9 +28,9 @@ LANG_MAPPING_V2 = ('', 'en', 'ja', 'pt', 'zh', 'ru',)
 
 class index:
     def GET(self):
-        ctx = web.input(s = 0, sid = '', c = 20, lang = 0, v = 1)
+        ctx = web.input(s = 0, sid = '', c = 20, lang = 0, v = 1, q = '')
         # print web.ctx.path, web.ctx.query
-        s = int(ctx.s); sid = ctx.sid; c = int(ctx.c); lang_idx = int(ctx.lang); version = int(ctx.v)
+        s = int(ctx.s); sid = ctx.sid; c = int(ctx.c); lang_idx = int(ctx.lang); version = int(ctx.v); q = ctx.q
         # skip + limit
         # 性能不行再使用>sid & limit
         query = {}
@@ -42,7 +42,9 @@ class index:
             if lang == 'en': query['lang'] = {'$in': ['en', 'fr', 'de', 'es', 'it']}
             elif lang: query['lang'] = lang
         # print('query on mongo = %s' % query)
-        rs = CF.FACT_TABLE.find(query, skip = s, limit = c, projection = ['title', 'description', 'viewcount', 'thumb', 'key', '_id', 'bigthumbhd'], sort = [('viewcount', pymongo.DESCENDING)])
+        query['$text'] = {'$search': q}
+        rs = CF.FACT_TABLE.find(query, skip = s, limit = c, projection = ['title', 'description', 'viewcount', 'thumb', 'key', '_id', 'bigthumbhd'],
+                                sort = [('score', {'$meta': 'textScore'}）, ('viewcount', pymongo.DESCENDING)])
         vds = []
         for r in rs:
             vd = {}

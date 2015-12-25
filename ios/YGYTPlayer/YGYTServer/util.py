@@ -148,11 +148,11 @@ def create_tables():
     CF.VIDEO_TABLE.create_index('key')
     CF.FACT_TABLE.create_index('key')
     CF.FACT_TABLE.create_index('lang')
-    CF.FACT_TABLE.create_index({'title':'text',
-                                'labels_text': 'text',
-                                'keywords_text': 'text'},
-                                {'default_language': 'english'},
-                                {'language_override': 'lang' })
+    # CF.FACT_TABLE.create_index({'title':'text',
+    #                             'labels_text': 'text',
+    #                             'keywords_text': 'text'},
+    #                             {'default_language': 'english'},
+    #                             {'language_override': 'lang' })
 
 def do():
     create_tables()
