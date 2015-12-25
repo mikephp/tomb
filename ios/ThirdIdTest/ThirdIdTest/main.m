@@ -1,6 +1,6 @@
 //
 //  main.m
-//  GPTest
+//  ThirdIdTest
 //
 //  Created by dirlt on 15/12/4.
 //  Copyright © 2015年 dirlt. All rights reserved.

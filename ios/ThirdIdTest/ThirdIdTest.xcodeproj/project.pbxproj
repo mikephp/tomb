@@ -14,15 +14,15 @@
 		F2F8059E1C111873007A672A /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F2F8059C1C111873007A672A /* Main.storyboard */; };
 		F2F805A01C111873007A672A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F2F8059F1C111873007A672A /* Assets.xcassets */; };
 		F2F805A31C111873007A672A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F2F805A11C111873007A672A /* LaunchScreen.storyboard */; };
-		F38441F7418949668D23CC70 /* libPods-GPTest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EAB98A6450B251B1A6246FC5 /* libPods-GPTest.a */; };
+		F38441F7418949668D23CC70 /* libPods-ThirdIdTest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EAB98A6450B251B1A6246FC5 /* libPods-ThirdIdTest.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		95D751B30A7090F619BFF72E /* Pods-GPTest.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GPTest.debug.xcconfig"; path = "Pods/Target Support Files/Pods-GPTest/Pods-GPTest.debug.xcconfig"; sourceTree = "<group>"; };
-		995FAC92555DDCAC2814BC74 /* Pods-GPTest.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GPTest.release.xcconfig"; path = "Pods/Target Support Files/Pods-GPTest/Pods-GPTest.release.xcconfig"; sourceTree = "<group>"; };
-		EAB98A6450B251B1A6246FC5 /* libPods-GPTest.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-GPTest.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		95D751B30A7090F619BFF72E /* Pods-ThirdIdTest.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ThirdIdTest.debug.xcconfig"; path = "Pods/Target Support Files/Pods-ThirdIdTest/Pods-ThirdIdTest.debug.xcconfig"; sourceTree = "<group>"; };
+		995FAC92555DDCAC2814BC74 /* Pods-ThirdIdTest.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ThirdIdTest.release.xcconfig"; path = "Pods/Target Support Files/Pods-ThirdIdTest/Pods-ThirdIdTest.release.xcconfig"; sourceTree = "<group>"; };
+		EAB98A6450B251B1A6246FC5 /* libPods-ThirdIdTest.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ThirdIdTest.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F20F7AD41C111AB900E7B4C8 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		F2F805901C111873007A672A /* GPTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GPTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F2F805901C111873007A672A /* ThirdIdTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ThirdIdTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2F805941C111873007A672A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		F2F805961C111873007A672A /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		F2F805971C111873007A672A /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -39,7 +39,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F38441F7418949668D23CC70 /* libPods-GPTest.a in Frameworks */,
+				F38441F7418949668D23CC70 /* libPods-ThirdIdTest.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -49,8 +49,8 @@
 		A0C8F455721FFEC48C779D29 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				95D751B30A7090F619BFF72E /* Pods-GPTest.debug.xcconfig */,
-				995FAC92555DDCAC2814BC74 /* Pods-GPTest.release.xcconfig */,
+				95D751B30A7090F619BFF72E /* Pods-ThirdIdTest.debug.xcconfig */,
+				995FAC92555DDCAC2814BC74 /* Pods-ThirdIdTest.release.xcconfig */,
 			);
 			name = Pods;
 			sourceTree = "<group>";
@@ -58,7 +58,7 @@
 		F2F805871C111873007A672A = {
 			isa = PBXGroup;
 			children = (
-				F2F805921C111873007A672A /* GPTest */,
+				F2F805921C111873007A672A /* ThirdIdTest */,
 				F2F805911C111873007A672A /* Products */,
 				A0C8F455721FFEC48C779D29 /* Pods */,
 				FFD59EA7BD595D7A01F6EA4E /* Frameworks */,
@@ -68,12 +68,12 @@
 		F2F805911C111873007A672A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				F2F805901C111873007A672A /* GPTest.app */,
+				F2F805901C111873007A672A /* ThirdIdTest.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		F2F805921C111873007A672A /* GPTest */ = {
+		F2F805921C111873007A672A /* ThirdIdTest */ = {
 			isa = PBXGroup;
 			children = (
 				F20F7AD41C111AB900E7B4C8 /* GoogleService-Info.plist */,
@@ -87,7 +87,7 @@
 				F2F805A41C111873007A672A /* Info.plist */,
 				F2F805931C111873007A672A /* Supporting Files */,
 			);
-			path = GPTest;
+			path = ThirdIdTest;
 			sourceTree = "<group>";
 		};
 		F2F805931C111873007A672A /* Supporting Files */ = {
@@ -101,7 +101,7 @@
 		FFD59EA7BD595D7A01F6EA4E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				EAB98A6450B251B1A6246FC5 /* libPods-GPTest.a */,
+				EAB98A6450B251B1A6246FC5 /* libPods-ThirdIdTest.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -109,9 +109,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		F2F8058F1C111873007A672A /* GPTest */ = {
+		F2F8058F1C111873007A672A /* ThirdIdTest */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = F2F805A71C111873007A672A /* Build configuration list for PBXNativeTarget "GPTest" */;
+			buildConfigurationList = F2F805A71C111873007A672A /* Build configuration list for PBXNativeTarget "ThirdIdTest" */;
 			buildPhases = (
 				1D89F0219C73E390E2348FE3 /* Check Pods Manifest.lock */,
 				F2F8058C1C111873007A672A /* Sources */,
@@ -124,9 +124,9 @@
 			);
 			dependencies = (
 			);
-			name = GPTest;
-			productName = GPTest;
-			productReference = F2F805901C111873007A672A /* GPTest.app */;
+			name = ThirdIdTest;
+			productName = ThirdIdTest;
+			productReference = F2F805901C111873007A672A /* ThirdIdTest.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -143,7 +143,7 @@
 					};
 				};
 			};
-			buildConfigurationList = F2F8058B1C111873007A672A /* Build configuration list for PBXProject "GPTest" */;
+			buildConfigurationList = F2F8058B1C111873007A672A /* Build configuration list for PBXProject "ThirdIdTest" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -156,7 +156,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				F2F8058F1C111873007A672A /* GPTest */,
+				F2F8058F1C111873007A672A /* ThirdIdTest */,
 			);
 		};
 /* End PBXProject section */
@@ -203,7 +203,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-GPTest/Pods-GPTest-resources.sh\"\n";
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-ThirdIdTest/Pods-ThirdIdTest-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		CD4A6F8264124298D8D39BBE /* Embed Pods Frameworks */ = {
@@ -218,7 +218,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-GPTest/Pods-GPTest-frameworks.sh\"\n";
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-ThirdIdTest/Pods-ThirdIdTest-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -340,24 +340,24 @@
 		};
 		F2F805A81C111873007A672A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 95D751B30A7090F619BFF72E /* Pods-GPTest.debug.xcconfig */;
+			baseConfigurationReference = 95D751B30A7090F619BFF72E /* Pods-ThirdIdTest.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				INFOPLIST_FILE = GPTest/Info.plist;
+				INFOPLIST_FILE = ThirdIdTest/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.dirlt.GPTest;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dirlt.ThirdIdTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
 		};
 		F2F805A91C111873007A672A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 995FAC92555DDCAC2814BC74 /* Pods-GPTest.release.xcconfig */;
+			baseConfigurationReference = 995FAC92555DDCAC2814BC74 /* Pods-ThirdIdTest.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				INFOPLIST_FILE = GPTest/Info.plist;
+				INFOPLIST_FILE = ThirdIdTest/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.dirlt.GPTest;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dirlt.ThirdIdTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -365,7 +365,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		F2F8058B1C111873007A672A /* Build configuration list for PBXProject "GPTest" */ = {
+		F2F8058B1C111873007A672A /* Build configuration list for PBXProject "ThirdIdTest" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F2F805A51C111873007A672A /* Debug */,
@@ -374,7 +374,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F2F805A71C111873007A672A /* Build configuration list for PBXNativeTarget "GPTest" */ = {
+		F2F805A71C111873007A672A /* Build configuration list for PBXNativeTarget "ThirdIdTest" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F2F805A81C111873007A672A /* Debug */,

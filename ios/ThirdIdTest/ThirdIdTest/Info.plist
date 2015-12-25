@@ -33,7 +33,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.dirlt.GPTest</string>
+				<string>com.dirlt.ThirdIdTest</string>
 			</array>
 		</dict>
 	</array>
