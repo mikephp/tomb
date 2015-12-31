@@ -9,10 +9,6 @@ ACCOUNT = st['account']
 VENUE = st['venues'][0]
 STOCK = st['tickers'][0]
 
-# ACCOUNT = 'DAH75681156'
-# VENUE = 'FFDEX'
-# STOCK = 'DOIN'
-
 import time
 ft = Stockfighter(VENUE, ACCOUNT)
 P = 0
