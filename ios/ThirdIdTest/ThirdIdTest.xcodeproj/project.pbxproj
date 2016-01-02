@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F20C6BD01C36B85A00EF4500 /* FBSDKCoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F20C6BCF1C36B85A00EF4500 /* FBSDKCoreKit.framework */; };
+		F20C6BD21C36B9CE00EF4500 /* FBSDKLoginKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F20C6BD11C36B9CE00EF4500 /* FBSDKLoginKit.framework */; };
 		F20F7AD51C111AB900E7B4C8 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = F20F7AD41C111AB900E7B4C8 /* GoogleService-Info.plist */; };
 		F2F805951C111873007A672A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = F2F805941C111873007A672A /* main.m */; };
 		F2F805981C111873007A672A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = F2F805971C111873007A672A /* AppDelegate.m */; };
@@ -21,6 +23,8 @@
 		95D751B30A7090F619BFF72E /* Pods-ThirdIdTest.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ThirdIdTest.debug.xcconfig"; path = "Pods/Target Support Files/Pods-ThirdIdTest/Pods-ThirdIdTest.debug.xcconfig"; sourceTree = "<group>"; };
 		995FAC92555DDCAC2814BC74 /* Pods-ThirdIdTest.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ThirdIdTest.release.xcconfig"; path = "Pods/Target Support Files/Pods-ThirdIdTest/Pods-ThirdIdTest.release.xcconfig"; sourceTree = "<group>"; };
 		EAB98A6450B251B1A6246FC5 /* libPods-ThirdIdTest.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ThirdIdTest.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F20C6BCF1C36B85A00EF4500 /* FBSDKCoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FBSDKCoreKit.framework; path = ../../../../Downloads/FacebookSDK/FBSDKCoreKit.framework; sourceTree = "<group>"; };
+		F20C6BD11C36B9CE00EF4500 /* FBSDKLoginKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FBSDKLoginKit.framework; path = ../../../../Downloads/FacebookSDK/FBSDKLoginKit.framework; sourceTree = "<group>"; };
 		F20F7AD41C111AB900E7B4C8 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		F2F805901C111873007A672A /* ThirdIdTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ThirdIdTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2F805941C111873007A672A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -40,6 +44,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				F38441F7418949668D23CC70 /* libPods-ThirdIdTest.a in Frameworks */,
+				F20C6BD01C36B85A00EF4500 /* FBSDKCoreKit.framework in Frameworks */,
+				F20C6BD21C36B9CE00EF4500 /* FBSDKLoginKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,6 +107,8 @@
 		FFD59EA7BD595D7A01F6EA4E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				F20C6BD11C36B9CE00EF4500 /* FBSDKLoginKit.framework */,
+				F20C6BCF1C36B85A00EF4500 /* FBSDKCoreKit.framework */,
 				EAB98A6450B251B1A6246FC5 /* libPods-ThirdIdTest.a */,
 			);
 			name = Frameworks;
@@ -343,10 +351,13 @@
 			baseConfigurationReference = 95D751B30A7090F619BFF72E /* Pods-ThirdIdTest.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ENABLE_BITCODE = NO;
+				"FRAMEWORK_SEARCH_PATHS[arch=*]" = /Users/dirlt/Downloads/FacebookSDK;
 				INFOPLIST_FILE = ThirdIdTest/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.dirlt.ThirdIdTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				x = "";
 			};
 			name = Debug;
 		};
@@ -355,10 +366,13 @@
 			baseConfigurationReference = 995FAC92555DDCAC2814BC74 /* Pods-ThirdIdTest.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ENABLE_BITCODE = NO;
+				"FRAMEWORK_SEARCH_PATHS[arch=*]" = /Users/dirlt/Downloads/FacebookSDK;
 				INFOPLIST_FILE = ThirdIdTest/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.dirlt.ThirdIdTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				x = "";
 			};
 			name = Release;
 		};

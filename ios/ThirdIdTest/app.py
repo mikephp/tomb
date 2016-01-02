@@ -5,8 +5,10 @@
 import web
 import json
 from oauth2client import client, crypt
+import facebook
 
-urls = ("/tokensignin", 'TokenSignIn',)
+urls = ("/tokensignin", 'TokenSignIn',
+        '/tokensignin-fb', 'TokenSignInFB',)
 
 app = web.application(urls, globals())
 
@@ -36,6 +38,39 @@ class TokenSignIn:
             return 'NOT OK'
         print idinfo
         userid = idinfo['sub']
+        return 'OK'
+
+"""
+In [19]: g.get_object(id='me', fields=['email', 'picture','birthday','name','locale'])
+Out[19]:
+{'email': 'dirtysalt1987@gmail.com',
+ 'id': '983661618394966',
+ 'locale': 'zh_CN',
+ 'name': u'\u7ae0\u708e',
+ 'picture': {'data': {'is_silhouette': False,
+   'url': 'https://scontent.xx.fbcdn.net/hprofile-ash2/v/t1.0-1/c95.25.310.310/s50x50/246901_101089229985547_3411537_n.jpg?oh=1277182b9802b75c4fcfee570bc8adcc&oe=5713645F'}}}
+"""
+class TokenSignInFB:
+    def GET(self):
+        data = web.input(token = '')
+        token = data.token
+        return self.handle(token)
+
+    def POST(self):
+        data = web.data()
+        js = json.loads(data)
+        token = js['idtoken']
+        return self.handle(token)
+
+    def handle(self, token):
+        print('token = %s' % token)
+        try:
+            g = facebook.GraphAPI(access_token = token)
+            data = g.get_object(id='me', fields = ['email', 'picture', 'name', 'locale'])
+        except Exception as e:
+            print e
+            return 'NOT OK'
+        print data
         return 'OK'
 
 if __name__ == '__main__':
