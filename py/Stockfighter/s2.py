@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-#coding:utf-8
-#Copyright (C) dirlt
+# coding:utf-8
+# Copyright (C) dirlt
 
 from stockfighter import Stockfighter
 
@@ -14,10 +14,13 @@ ft = Stockfighter(VENUE, ACCOUNT)
 P = 0
 while True:
     quote = ft.quote(STOCK)
-    if not ('bid' in quote and 'ask' in quote): time.sleep(1); continue
+    if not ('bid' in quote and 'ask' in quote):
+        time.sleep(1)
+        continue
     bid = quote['bid']
     ask = quote['ask']
-    if not P: P = bid
+    if not P:
+        P = bid
     if P > bid:
         P -= 50
     else:
@@ -28,6 +31,6 @@ while True:
     st = ft.order(STOCK, price, size, 'buy', 'limit')
     tid = st['id']
     time.sleep(5)
+    ft.cancel(STOCK, tid)
     st = ft.order_status(STOCK, tid)
-    v = sum(map(lambda x : x['qty'], st['fills']))
-    if v < size: ft.cancel(STOCK, tid)
+    v = sum(map(lambda x: x['qty'], st['fills']))
