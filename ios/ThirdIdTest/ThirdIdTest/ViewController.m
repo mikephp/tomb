@@ -51,7 +51,7 @@
         
         // send id token to backend server.
         NSString *idToken = token.tokenString;
-        NSString *signinEndpoint = @"http://localhost:8001/tokensignin-fb";
+        NSString *signinEndpoint = @"http://localhost:8082/tokensignin-fb";
         NSDictionary *params = @{@"idtoken": idToken};
         
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:signinEndpoint]];
