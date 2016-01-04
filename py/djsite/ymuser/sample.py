@@ -20,7 +20,7 @@ def signature(js, private):
     m.update(s)
     return m.hexdigest()
 
-# URL = 'http://localhost:8001/ymuser/'
+# URL = 'http://localhost:8002/ymuser/'
 URL = 'http://api.yogamonkey.fit/ymuser/'
 PUB = '99754106633f94d350db34d548d6091a'
 PRI = '639bae9ac6b3e1a84cebb7b403297b79'
