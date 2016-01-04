@@ -30,8 +30,6 @@ def signature(js, private):
     return m.hexdigest()
 
 GOOGLE_ACCEPT_CLIENT_IDS = (settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY,
-                            '962722732387-okdgpbfgsn283j59r4sc0ea9q782j2ir.apps.googleusercontent.com'
-                            '525316742067-ajioek3l765jbi0djgjnktf8cac5au8a.apps.googleusercontent.com',
                             '1024550827919-n8bl5dfps3ev40kn327lhh1mb6bof53p.apps.googleusercontent.com',
                             '1024550827919-mnc5opl8h5tn4aq89kcvdohupdc19so7.apps.googleusercontent.com',
                             '1024550827919-a73g29gv3f1smo56mr73nl6l7trg23ap.apps.googleusercontent.com',
@@ -90,6 +88,7 @@ def get_private(pub):
 def get_user_id(auth_data):
     provider = auth_data['provider']
     uid = auth_data['uid']
+    logger.debug('uid = {}'.format(uid))
     user_social_auth = UserSocialAuth.get_social_auth(provider, uid)
     if user_social_auth:
         user = YMUser.objects.get(id=user_social_auth.user_id)
