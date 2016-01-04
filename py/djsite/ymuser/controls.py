@@ -72,6 +72,7 @@ def request_auth_service(provider, client_id, token):
 
 KEY_PAIRS = (('99754106633f94d350db34d548d6091a',  # echo -n "fuck" | md5
               '639bae9ac6b3e1a84cebb7b403297b79'),  # echo -n "you" | md5
+
              )
 
 
@@ -109,11 +110,11 @@ def get_user_id(auth_data):
     # logger.debug('user save called...')
     user.save()
     if user_social_auth:
-        return user.id
+        return (user.id, False)
     user_social_auth = UserSocialAuth(user_id=user.id, provider=provider,
                                       uid=uid, extra_data=auth_data)
     user_social_auth.save()
-    return user.id
+    return (user.id, True)
 
 
 def verify_client_auth(js):
@@ -125,17 +126,41 @@ def verify_client_auth(js):
     return True
 
 
-def get_user_info(uid):
+def get_user_info(uid, tag):
     user = YMUser.objects.get(id=uid)
-    info = {'timeline': user.timeline,
-            'premium-to': user.premium_to}
+
+    def retrieve(js, user, fields):
+        for f in fields:
+            if isinstance(f, tuple):
+                (jf, uf) = (f[0], f[1])
+            else:
+                (jf, uf) = (f, f)
+            js[jf] = user.__getattribute__(uf)
+
+    if tag == 'guru':
+        fields = ['timeline', ('premium-to', 'premium_to')]
+    elif tag == 'pc':
+        fields = ['icon_url', 'username', 'email',
+                  'pd_cycle', 'pd_length', 'pd_last']
+    info = {}
+    retrieve(info, user, fields)
     return info
 
 
-def set_user_info(uid, js):
+def set_user_info(uid, tag, js):
     user = YMUser.objects.get(id=uid)
-    if 'timeline' in js:
-        user.timeline = js['timeline']
-    if 'premium-to' in js:
-        user.premium_to = js['premium-to']
+
+    def overwrite(user, js, fields):
+        for f in fields:
+            if isinstance(f, tuple):
+                (jf, uf) = (f[0], f[1])
+            else:
+                (jf, uf) = (f, f)
+            user.__setattr__(uf, js[jf])
+
+    if tag == 'guru':
+        fields = ['timeline', ('premium-to', 'premium_to')]
+    elif tag == 'pc':
+        fields = ['pd_cycle', 'pd_length', 'pd_last', 'username']
+    overwrite(user, js, fields)
     user.save()

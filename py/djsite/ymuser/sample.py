@@ -20,8 +20,8 @@ def signature(js, private):
     m.update(s)
     return m.hexdigest()
 
-# URL = 'http://localhost:8002/ymuser/'
-URL = 'http://api.yogamonkey.fit/ymuser/'
+URL = 'http://localhost:8002/ymuser/'
+# URL = 'http://api.yogamonkey.fit/ymuser/'
 PUB = '99754106633f94d350db34d548d6091a'
 PRI = '639bae9ac6b3e1a84cebb7b403297b79'
 
@@ -44,7 +44,7 @@ def test_token_signin():
 FB_TOKEN = 'CAAYmGJhWxrkBAOI3awmefXZCxUdHJmxj09jKMzQVowPm2TI5KYxEsJOmH0UuK0oNXWRQVOKLzFDwaMEnyBPGqQjafRmVLi6Hr5JSfRLrHqMrUdk0VijMFI8ZBSTqSLy7WlYlpBWjBgawzzqEYNhjbogQMSNuZBsHwZCU8nzGSmRTKOgWnC9c0NzK254GleYZC06deGSKT7pMcWw7NHORUmzfZALWYKc9YZD'
 
 
-def test_token_signin2():
+def test_token_signin_fb():
     url = URL + 'token-signin/'
     payload = {'token': FB_TOKEN,
                'client_id': '',
@@ -56,7 +56,7 @@ def test_token_signin2():
     print r.text
 
 
-def test_user_info():
+def test_user_info_guru():
     url = URL + 'set-user-info/'
     payload = {'pub': PUB, 'uid': 1,
                'timeline': 20, 'premium-to': '2025-10-10'}
@@ -72,7 +72,26 @@ def test_user_info():
     r = requests.post(url, data=json.dumps(payload))
     print r.text
 
+
+def test_user_info_pc():
+    url = URL + 'set-user-info/'
+    payload = {'pub': PUB, 'uid': 1, 'tag': 'pc',
+               'pd_cycle': 30, 'pd_length': 8, 'pd_last': '2016-01-02',
+               'username': 'annoy hacker'}
+    sign = signature(payload, PRI)
+    payload['sign'] = sign
+    r = requests.post(url, data=json.dumps(payload))
+    print r.text
+
+    url = URL + 'get-user-info/'
+    payload = {'pub': PUB, 'uid': 1, 'tag': 'pc'}
+    sign = signature(payload, PRI)
+    payload['sign'] = sign
+    r = requests.post(url, data=json.dumps(payload))
+    print r.text
+
 if __name__ == '__main__':
-    test_token_signin()
-    # test_user_info()
-    test_token_signin2()
+    # test_token_signin()
+    test_user_info_guru()
+    # test_token_signin_fb()
+    test_user_info_pc()
