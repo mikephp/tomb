@@ -11,9 +11,13 @@ import json
 
 wrong_signature = JsonResponse({'code': -1, 'msg': 'wrong signature'})
 
+import logging
+logger = logging.getLogger(__name__)
+
 @csrf_exempt
 def token_signin(request):
     body = request.body
+    logger.debug('body = %s' % body)
     js = json.loads(body)
     if not C.verify_client_auth(js): return wrong_signature
     provider = js['provider']

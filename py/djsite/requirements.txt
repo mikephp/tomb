@@ -8,3 +8,7 @@ google-api-python-client==1.4.2
 gunicorn
 MySQL-python
 PyCrypto
+tinys3
+facebook-sdk
+ws4py
+
