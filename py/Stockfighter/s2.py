@@ -62,6 +62,15 @@ class MarketWatcher(object):
         quote = self.ft.quote(STOCK)
 
 
+def play_watcher():
+    quote = ft.quote(STOCK)
+    if not ('bid' in quote and 'ask' in quote and 'last' in quote):
+        continue
+    print('bid: %d(+%d) @ %d, ask: %d(+%d) @ %d, ok: %d @ %d' % (
+        quote['bidSize'], quote['bidDepth'], quote['bid'], quote['askSize'],
+        quote['askDepth'], quote['ask'], quote['lastSize'], quote['last']))
+    time.sleep(1)
+
 P = 5386
 while True:
     quote = ft.quote(STOCK)
