@@ -59,7 +59,7 @@ class OrderManager(object):
             g = gevent.spawn(f, o)
             pool.add(g)
         pool.join()
-        # 最低成交价格
+        # 最低成交价格. 最低成交价格有可能是当前市场价.
         deals = [x.price for x in filter(lambda o: o.diff, self.orders)]
         self.orders = filter(lambda o: o.filled < o.qty, self.orders)
 
@@ -67,7 +67,7 @@ class OrderManager(object):
         global STOCK
         pool = Pool()
 
-        # cancel all orders whose price is higher than market price.
+        # 取消所有高于市场价格的订单.
         cancel_orders = filter(
             lambda o: o.price > self.market, self.orders)
         for o in cancel_orders:
@@ -75,13 +75,14 @@ class OrderManager(object):
             pool.add(g)
             self.orders.remove(o)
 
-        # place new orders according to market
+        # 根据当前市场投放新订单
         price_set = set(map(lambda o: o.price, self.orders))
         print('>>>>> price_set = %s' % (price_set))
         for i in range(8):
             p = self.market - i * 50
             if p in price_set:
                 continue
+            # 每种价格只购买2000.
             order = Order(p, 2000)
 
             def place_new_order(order):
@@ -119,6 +120,7 @@ class MarketWatcher(object):
         bids = book['bids']
         if not bids:
             return 0
+        # 根据自己投放订单估算市场价格.
         price = 0
         for b in bids:
             if not b['price'] in price_mapping:
@@ -155,6 +157,7 @@ def play_game():
             time.sleep(SLEEP)
             continue
         p = xround(p)
+        # 市场价格不能波动太大, 并且要小于某个阈值.
         if pp and p > pp:
             p = min(pp + 50, p, THRESHOLD)
         pp = p
