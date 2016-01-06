@@ -15,6 +15,7 @@ ACCOUNT = st['account']
 VENUE = st['venues'][0]
 STOCK = st['tickers'][0]
 ft = Stockfighter(VENUE, ACCOUNT)
+INTERVAL = 50
 
 
 class Order(object):
@@ -33,11 +34,12 @@ class OrderManager(object):
         self.market = 0
         self.max_size = max_size
         self.ft = ft
-        self.step = 20
 
     def update_market_price(self, v):
-        self.market = (v / self.step) * self.step
+        self.market = v
         print('market = %d' % (self.market))
+        if self.market == 0:
+            return
         self.action()
 
     def action(self):
@@ -63,9 +65,10 @@ class OrderManager(object):
 
         # place new orders according to market
         price_set = set(map(lambda o: o.price, self.orders))
-        print('>>>>> price_set = {}'.format(price_set))
+        print('>>>>> price_set = %s' % (price_set))
+        global INTERVAL
         for i in range(10):
-            p = self.market - i * self.step
+            p = self.market - i * INTERVAL
             if p in price_set:
                 continue
             order = Order(p, 1000)
@@ -80,32 +83,56 @@ class OrderManager(object):
             self.orders.append(order)
         pool.join()
         price_set = set(map(lambda o: o.price, self.orders))
-        print('<<<<< price_set = {}'.format(price_set))
+        print('<<<<< price_set = %s' % (price_set))
 
 
 class MarketWatcher(object):
 
     def __init__(self, ft):
         self.ft = ft
-        self.market_price = 0
+        self.bids = []
 
     def watch(self, detail=False):
         global STOCK
         quote = ft.quote(STOCK)
         if not ('bid' in quote and 'ask' in quote):
-            return self.market_price
-        if detail:
-            print('bid: %d(+%d) @ %d, ask: %d(+%d) @ %d' % (
-                quote['bidSize'], quote['bidDepth'], quote['bid'],
-                quote['askSize'], quote['askDepth'], quote['ask']))
-        bid = quote['bid']
-        if not self.market_price:
-            self.market_price = bid
-        elif self.market_price > bid:
-            self.market_price = bid
-        else:
-            self.market_price = min(self.market_price + 100, bid)
-        return self.market_price
+            return
+        print('bid: %d(+%d) @ %d, ask: %d(+%d) @ %d' % (
+            quote['bidSize'], quote['bidDepth'], quote['bid'],
+            quote['askSize'], quote['askDepth'], quote['ask']))
+
+    def watch_and_compute(self, om):
+        global STOCK
+        book = ft.orderbook(STOCK)
+        orders = om.orders
+        price_mapping = {x.price: x for x in orders}
+        bids = book['bids']
+        if not bids:
+            return 0
+        # print('----- bids = %s' % (bids))
+        final_price = 0
+        for b in bids:
+            if not b['price'] in price_mapping:
+                # market price.
+                final_price = b['price']
+                break
+            o = price_mapping[b['price']]
+            if (o.qty - o.filled) < b['qty']:
+                # maybe market price.
+                final_price = b['price']
+                break
+        final_price = (final_price / INTERVAL) * INTERVAL
+        if not final_price:
+            if not self.bids:
+                return 0
+            else:
+                print('all bids from myself')
+                return self.bids[-1] - 100
+        self.bids.append(final_price)
+        self.bids = self.bids[-8:]
+        # print('----- history bids = %s' % (self.bids))
+        final_price = min(self.bids)
+        return final_price
 
 
 def play_watch():
@@ -121,9 +148,8 @@ def play_game():
     mw = MarketWatcher(ft)
     om = OrderManager(ft)
     while True:
-        p = mw.watch()
-        if not p:
-            time.sleep(1)
+        print('====================')
+        p = mw.watch_and_compute(om)
         om.update_market_price(p)
 
 if __name__ == '__main__':
