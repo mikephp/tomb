@@ -15,7 +15,10 @@ ACCOUNT = st['account']
 VENUE = st['venues'][0]
 STOCK = st['tickers'][0]
 ft = Stockfighter(VENUE, ACCOUNT)
-INTERVAL = 50
+SLEEP = int(open('sleep', 'r').read())
+
+
+def xround(x): return x / 20 * 20
 
 
 class Order(object):
@@ -25,11 +28,12 @@ class Order(object):
         self.price = price
         self.qty = qty
         self.filled = 0
+        self.diff = 0
 
 
 class OrderManager(object):
 
-    def __init__(self, ft, max_size=8):
+    def __init__(self, ft, max_size=16):
         self.orders = []
         self.market = 0
         self.max_size = max_size
@@ -37,41 +41,48 @@ class OrderManager(object):
 
     def update_market_price(self, v):
         self.market = v
-        print('market = %d' % (self.market))
-        if self.market == 0:
-            return
         self.action()
 
-    def action(self):
-        pool = Pool()
+    def update_order_status(self):
         global STOCK
+        pool = Pool()
 
-        # cancel all orders whose price is higher than market
-        cancel_orders = filter(lambda o: o.price > self.market, self.orders)
+        self.orders.sort(lambda x, y: -cmp(x.price, y.price))
+        for o in self.orders:
+            o.diff = 0
+        for o in self.orders[:self.max_size]:
+            def f(order):
+                st = self.ft.order_status(STOCK, order.tid)
+                filled = sum(map(lambda x: x['qty'], st['fills']))
+                order.diff = filled - order.filled
+                order.filled = filled
+            g = gevent.spawn(f, o)
+            pool.add(g)
+        pool.join()
+        # 最低成交价格
+        deals = [x.price for x in filter(lambda o: o.diff, self.orders)]
+        self.orders = filter(lambda o: o.filled < o.qty, self.orders)
+
+    def action(self):
+        global STOCK
+        pool = Pool()
+
+        # cancel all orders whose price is higher than market price.
+        cancel_orders = filter(
+            lambda o: o.price > self.market, self.orders)
         for o in cancel_orders:
             g = gevent.spawn(self.ft.cancel, STOCK, o.tid)
             pool.add(g)
             self.orders.remove(o)
-        # check all orders which are filled and remove them.
-        for o in self.orders:
-            def check_filled_cond(order):
-                st = self.ft.order_status(STOCK, order.tid)
-                filled = sum(map(lambda x: x['qty'], st['fills']))
-                self.filled = filled
-            g = gevent.spawn(check_filled_cond, o)
-            pool.add(g)
-        pool.join()
-        self.orders = filter(lambda o: o.filled < o.qty, self.orders)
 
         # place new orders according to market
         price_set = set(map(lambda o: o.price, self.orders))
         print('>>>>> price_set = %s' % (price_set))
-        global INTERVAL
-        for i in range(10):
-            p = self.market - i * INTERVAL
+        for i in range(8):
+            p = self.market - i * 50
             if p in price_set:
                 continue
-            order = Order(p, 1000)
+            order = Order(p, 2000)
 
             def place_new_order(order):
                 st = self.ft.order(STOCK, order.price,
@@ -90,7 +101,6 @@ class MarketWatcher(object):
 
     def __init__(self, ft):
         self.ft = ft
-        self.bids = []
 
     def watch(self, detail=False):
         global STOCK
@@ -101,7 +111,7 @@ class MarketWatcher(object):
             quote['bidSize'], quote['bidDepth'], quote['bid'],
             quote['askSize'], quote['askDepth'], quote['ask']))
 
-    def watch_and_compute(self, om):
+    def estimate(self, om):
         global STOCK
         book = ft.orderbook(STOCK)
         orders = om.orders
@@ -109,30 +119,18 @@ class MarketWatcher(object):
         bids = book['bids']
         if not bids:
             return 0
-        # print('----- bids = %s' % (bids))
-        final_price = 0
+        price = 0
         for b in bids:
             if not b['price'] in price_mapping:
                 # market price.
-                final_price = b['price']
+                price = b['price']
                 break
             o = price_mapping[b['price']]
             if (o.qty - o.filled) < b['qty']:
                 # maybe market price.
-                final_price = b['price']
+                price = b['price']
                 break
-        final_price = (final_price / INTERVAL) * INTERVAL
-        if not final_price:
-            if not self.bids:
-                return 0
-            else:
-                print('all bids from myself')
-                return self.bids[-1] - 100
-        self.bids.append(final_price)
-        self.bids = self.bids[-8:]
-        # print('----- history bids = %s' % (self.bids))
-        final_price = min(self.bids)
-        return final_price
+        return price
 
 
 def play_watch():
@@ -147,10 +145,22 @@ def play_game():
     global ft
     mw = MarketWatcher(ft)
     om = OrderManager(ft)
+    pp = 0
+    THRESHOLD = int(open('threshold', 'r').read())
     while True:
         print('====================')
-        p = mw.watch_and_compute(om)
+        om.update_order_status()
+        p = mw.estimate(om)
+        if not p:
+            time.sleep(SLEEP)
+            continue
+        p = xround(p)
+        if pp and p > pp:
+            p = min(pp + 50, p, THRESHOLD)
+        pp = p
+        print('market price = %d' % p)
         om.update_market_price(p)
+        time.sleep(SLEEP)
 
 if __name__ == '__main__':
     play_game()
