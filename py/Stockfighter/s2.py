@@ -39,6 +39,19 @@ class OrderManager(object):
         self.max_size = max_size
         self.ft = ft
 
+    def clear_old_orders(self):
+        global STOCK
+        print('clear old orders...')
+        old_orders = self.ft.my_orders()['orders']
+        pool = Pool()
+        for o in old_orders:
+            if o['symbol'] != STOCK:
+                continue
+            print('id = %s' % (o['id']))
+            g = gevent.spawn(self.ft.cancel, STOCK, o['id'])
+            pool.add(g)
+        pool.join()
+
     def update_market_price(self, v):
         self.market = v
         self.action()
@@ -130,6 +143,9 @@ class MarketWatcher(object):
                 price = b['price']
                 break
             o = price_mapping[b['price']]
+            # note: 如果中断过，那么之前出的单会被计算在里面
+            # 所以每次重启时候最好取消之前所有下过的单.
+            # 或者是将这些单同步到orders里面.
             if (o.qty - o.filled) < b['qty']:
                 # maybe market price.
                 price = b['price']
@@ -152,6 +168,7 @@ def play_game1():
     mw = MarketWatcher(ft)
     om = OrderManager(ft)
     pp = 0
+    om.clear_old_orders()
     THRESHOLD = int(raw_input('target price > '))
     while True:
         print('====================')
