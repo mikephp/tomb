@@ -52,9 +52,6 @@ class Podcast(Base):
     authorName = Column(TEXT)
     feedUrl = Column(TEXT)
     cover30 = Column(TEXT)
-    cover60 = Column(TEXT)
-    cover100 = Column(TEXT)
-    cover600 = Column(TEXT)
     releaseDate = Column(DateTime)
     trackCount = Column(Integer)
     # from feed
@@ -176,17 +173,13 @@ def do_lookup_1(country, genre):
         # print(res.encoding)
         json = res.json()
         if json['resultCount'] != 1:
-            print('FAILED. result count != 1')
+            if json['resultCount'] != 0:
+                print('FAILED. result count %d. pid = %d' %
+                      (json['resultCount'], pid))
             return
         data = json['results'][0]
         if 'artworkUrl30' in data:
             r.cover30 = data['artworkUrl30']
-        if 'artworkUrl60' in data:
-            r.cover60 = data['artworkUrl60']
-        if 'artworkUrl100' in data:
-            r.cover100 = data['artworkUrl100']
-        if 'artworkUrl600' in data:
-            r.cover600 = data['artworkUrl600']
         if 'releaseDate' in data:
             r.releaseDate = data['releaseDate']
         if 'trackCount' in data:
