@@ -6,3 +6,4 @@ DB_HOST = 'localhost'
 DB_NAME = 'pdcast'
 DB_USER = 'root'
 DB_PASS = '123456'
+CACHE_EXPIRE_DAYS = 365
