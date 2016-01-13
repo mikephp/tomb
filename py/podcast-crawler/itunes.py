@@ -2,13 +2,13 @@
 # coding:utf-8
 # Copyright (C) dirlt
 
+from gevent import monkey
+monkey.patch_all()
+
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 from config import *
-
-from gevent import monkey
-monkey.patch_socket()
 
 ITUNES_COUNTRY_CODE = {
     'Canada': 'ca', 'Uruguay (English)': 'uy_en', 'Turkmenistan': 'tm', 'Lithuania': 'lt', 'Cambodia': 'kh', 'Germany (English)': 'de_en', 'Turkey (English)': 'tr_en', 'Micronesia': 'fm', 'Argentina': 'ar', 'Bolivia': 'bo', 'Burkina Faso': 'bf', 'Ghana': 'gh', 'Saudi Arabia': 'sa', 'Panama (English)': 'pa_en', 'Dominican Republic (English)': 'do_en', 'Japan': 'jp', 'Cape Verde': 'cv', 'Slovenia': 'si', 'Guatemala': 'gt', 'Zimbabwe': 'zw', 'Belize (Spanish)': 'bz_es', 'Jordan': 'jo', 'St. Lucia': 'lc', 'Dominica': 'dm', 'Liberia': 'lr', 'Netherlands': 'nl', 'Russia (English)': 'ru_en', 'Pakistan': 'pk', 'Netherlands (English)': 'nl_en', 'Tanzania': 'tz', 'Vietnam': 'vn', 'S\xc3\xa3o Tom\xc3\xa9 and Pr\xc3\xadncipe': 'st', 'Dominica (English)': 'dm_en', 'Mauritania': 'mr', 'Seychelles': 'sc', 'New Zealand': 'nz', 'Yemen': 'ye', 'Jamaica': 'jm', 'Malaysia (English)': 'my_en', 'Albania': 'al', 'Macau': 'mo', 'Korea (English)': 'kr_en', 'India': 'in', 'Azerbaijan': 'az', 'United Arab Emirates': 'ae', 'Kenya': 'ke', 'Tajikistan': 'tj', 'Nicaragua (English)': 'ni_en', 'Turkey': 'tr', 'Japan (English)': 'jp_en', 'Czech Republic': 'cz', 'Luxembourg (English)': 'lu_en', 'Solomon Islands': 'sb', 'Switzerland (French)': 'ch_fr', 'Palau': 'pw', 'Mongolia': 'mn', 'France': 'fr', 'Bermuda': 'bm', 'Slovakia': 'sk', 'Sweden (English)': 'se_en', 'Peru': 'pe', 'Indonesia (English)': 'id_en', 'Norway': 'no', 'Malawi': 'mw', 'Benin': 'bj', 'Macau (English)': 'mo_en', 'Brazil (English)': 'br_en', 'Singapore': 'sg', 'China': 'cn', 'Armenia': 'am', 'Suriname (English)': 'sr_en', 'Dominican Republic': 'do', 'Luxembourg (French)': 'lu_fr', 'Hong Kong (English)': 'hk_en', 'Ukraine': 'ua', 'Bahrain': 'bh', 'Cayman Islands': 'ky', 'Portugal (English)': 'pt_en', 'Finland': 'fi', 'Mauritius': 'mu', 'Sweden': 'se', 'Belarus': 'by', 'British Virgin Islands': 'vg', 'Mali': 'ml', 'Russia': 'ru', 'Bulgaria': 'bg', 'United States': 'us', 'Romania': 'ro', 'Angola': 'ao', 'Chad': 'td', 'China (English)': 'cn_en', 'Cyprus': 'cy', 'Brunei Darussalam': 'bn', 'Qatar': 'qa', 'Malaysia': 'my', 'Austria': 'at', 'Latvia': 'lv', 'Mozambique': 'mz', 'Uganda': 'ug', 'Hungary': 'hu', 'Niger': 'ne', 'El Salvador (English)': 'sv_en', 'Brazil': 'br',
