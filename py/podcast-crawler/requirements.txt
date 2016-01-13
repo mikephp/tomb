@@ -1,0 +1,6 @@
+sqlalchemy
+gevent
+requests
+beautifulsoup4
+feedparser
+MySQL-python
