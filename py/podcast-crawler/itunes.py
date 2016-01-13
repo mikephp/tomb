@@ -67,6 +67,7 @@ class Podcast(Base):
     wellFormed = Column(Integer)  # content of feedUrl is well-formed?
     parsedDate = Column(DateTime)  # when this feedUrl is parsed.
     description = Column(TEXT)
+    lang = Column(String(16), index=True)
 
 
 class Cache(Base):
@@ -238,7 +239,6 @@ def parse_lookup_1(country, genre):
     rs = [u for u in session.query(
         Podcast).filter_by(country=country, genre=genre)]
     pool = Pool(size=32)
-    force = False
 
     def f(r):
         pid = r.pid
@@ -259,7 +259,7 @@ def parse_lookup_1(country, genre):
             return
         data = json['results'][0]
         # some issues when comparing datetime.
-        if not force and r.trackCount == data['trackCount']:
+        if not FORCE_PARSE_LOOKUP and r.trackCount == data['trackCount']:
             # print('PARSE LOOKUP CACHED. pid = %d' % (pid))
             return
         # genreIds = map(lambda x: int(x), data['genreIds'])
@@ -349,21 +349,30 @@ import xml.dom.minidom
 
 
 def extract_detail(r, now, data):
+    detail = {'lang': '',
+              'desc': ''}
     try:
         dom = xml.dom.minidom.parseString(data)
         d = dom.getElementsByTagName(
             'description') or dom.getElementsByTagName('itunes:summary')
-        r.description = d[0].firstChild.data.encode('utf-8')
+        if d:
+            detail['desc'] = d[0].firstChild.data
+        d = dom.getElementsByTagName('language')
+        if d:
+            detail['lang'] = d[0].firstChild.data
     except:
         d = feedparser.parse(data)
         feed = d['feed']
         if 'description' in feed:
-            r.description = feed['description'].encode('utf-8')
+            detail['desc'] = feed['description']
         if 'summary' in feed:
-            r.description = feed['summary'].encode('utf-8')
+            detail['desc'] = feed['summary']
+        if 'language' in feed:
+            detail['lang'] = feed['language']
+    r.description = detail['desc'].encode('utf-8').strip()
+    r.lang = detail['lang'].encode('utf-8').strip()
     r.wellFormed = 1
     r.parsedDate = now
-    # print(r.description[:20] + '...' + r.description[-20:])
 
 
 def parse_feed_1(country, genre):
@@ -371,7 +380,6 @@ def parse_feed_1(country, genre):
     rs = [u for u in session.query(Podcast).filter_by(
         country=country, genre=genre)]
     pool = Pool(size=32)
-    force = False
     now = dt.datetime.now()
 
     def f(r):
@@ -382,7 +390,7 @@ def parse_feed_1(country, genre):
         if not cr:
             print('FEED NOT EXISTED. pid = %d' % (pid))
             return
-        if r.parsedDate and r.parsedDate >= cr.updateDate:
+        if not FORCE_PARSE_FEED and r.parsedDate and r.parsedDate >= cr.updateDate:
             # print('PARSE FEED CACHED. pid = %d' % (pid))
             return
         print('PARSE FEED. pid = %d' % (pid))
@@ -405,8 +413,8 @@ def parse_feed_1(country, genre):
 if __name__ == '__main__':
     comb = make_combination()
     down_index(comb)
-    func_on_comb(comb, parse_index_1)
-    func_on_comb(comb, down_lookup_1)
-    func_on_comb(comb, parse_lookup_1)
-    func_on_comb(comb, down_feed_1)
+    # func_on_comb(comb, parse_index_1)
+    # func_on_comb(comb, down_lookup_1)
+    # func_on_comb(comb, parse_lookup_1)
+    # func_on_comb(comb, down_feed_1)
     func_on_comb(comb, parse_feed_1)
