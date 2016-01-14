@@ -103,10 +103,10 @@ def make_combination(shuffle=False):
 
 def down_index(comb):
     pool = Pool(size=8)
-    URL = 'http://itunes.apple.com/%s/genre/id%d?mt=2'
+    URL = 'https://itunes.apple.com/%s/genre/id%d?mt=2'
     session = Session()
     now = dt.datetime.now()
-    expireDate = now - dt.timedelta(days=CACHE_EXPIRE_DAYS)
+    expireDate = now - dt.timedelta(days=INDEX_CACHE_EXPIRE_DAYS)
     for (country, genre) in comb:
         def f(country, genre):
             index_key = 'idx_%s_%d' % (country, genre)
@@ -188,6 +188,7 @@ def parse_index_1(country, genre):
 
 import datetime as dt
 import json as json_lib
+import time
 
 
 def down_lookup_1(country, genre):
@@ -196,7 +197,7 @@ def down_lookup_1(country, genre):
         country=country, genre=genre)]
     pool = Pool(size=4)
     now = dt.datetime.now()
-    expireDate = now - dt.timedelta(days=CACHE_EXPIRE_DAYS)
+    expireDate = now - dt.timedelta(days=LOOKUP_CACHE_EXPIRE_DAYS)
 
     def f(pid):
         lookup_key = 'lookup_%d' % (pid)
@@ -206,7 +207,7 @@ def down_lookup_1(country, genre):
             # print('DOWN LOOKUP CACHED. pid = %d' % (pid))
             return
         print('DOWN LOOKUP. pid = %d' % pid)
-        url = 'http://itunes.apple.com/lookup?id=%d' % (pid)
+        url = 'https://itunes.apple.com/lookup?id=%d' % (pid)
         res = requests.get(url)
         if res.status_code != 200:
             print("DOWN LOOKUP FAILED. url = %s code = %d" %
@@ -223,6 +224,7 @@ def down_lookup_1(country, genre):
         cache.updateDate = now
         session.add(cache)
         session.commit()
+        # time.sleep(1)
 
     for pid in pids:
         g = gevent.spawn(f, pid)
@@ -257,7 +259,9 @@ def parse_lookup_1(country, genre):
             return
         data = json['results'][0]
         # some issues when comparing datetime.
-        if not FORCE_PARSE_LOOKUP and r.trackCount == data['trackCount']:
+        if not FORCE_PARSE_LOOKUP and \
+                r.trackCount == data['trackCount'] and \
+                r.feedUrl == data['feedUrl']:
             # print('PARSE LOOKUP CACHED. pid = %d' % (pid))
             return
         # genreIds = map(lambda x: int(x), data['genreIds'])
@@ -291,6 +295,7 @@ def down_feed_1(country, genre):
         Podcast).filter_by(country=country, genre=genre)]
     pool = Pool(size=8)
     now = dt.datetime.now()
+    expireDate = now - dt.timedelta(days=FEED_CACHE_EXPIRE_DAYS)
 
     def f(r):
         if r.skip:
@@ -299,8 +304,7 @@ def down_feed_1(country, genre):
         feed_key = 'feed_%d' % (pid)
         cr = session.query(Cache).filter_by(
             mykey=feed_key, tag='feed').first()
-        # 如果itunes里面有releaseDate并且缓存更新时间大于releaseDate.
-        if cr and (not r.releaseDate or cr.updateDate >= r.releaseDate):
+        if cr and cr.updateDate > expireDate:
             # print('DOWN FEED CACHED. pid = %d' % pid)
             return
         url = r.feedUrl
@@ -314,7 +318,7 @@ def down_feed_1(country, genre):
             return
         if res.status_code != 200:
             print('DOWN FEED FAILED. pid = %d, url = %s http-code = %d' %
-                 (pid, url, res.status_code))
+                  (pid, url, res.status_code))
             if res.status_code in (403, 404):
                 r.skip = 1
             session.add(r)
