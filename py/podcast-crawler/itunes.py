@@ -224,7 +224,7 @@ def down_lookup_1(country, genre):
         cache.updateDate = now
         session.add(cache)
         session.commit()
-        # time.sleep(1)
+        time.sleep(1)
 
     for pid in pids:
         g = gevent.spawn(f, pid)
