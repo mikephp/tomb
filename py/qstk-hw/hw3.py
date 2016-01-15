@@ -58,7 +58,7 @@ def simulate(orders, amount):
     return (ldt_timestamps, np.array(values))
 
 
-def compare_to_SPX(ldt_timestamps, values):
+def compare_to_SPX(ldt_timestamps, values, image=True):
     c_dataobj = da.DataAccess('Yahoo')
     ldf_data = c_dataobj.get_data(ldt_timestamps, ['$SPX'], ['close'])
     spx_values = ldf_data[0].values
@@ -82,13 +82,14 @@ def compare_to_SPX(ldt_timestamps, values):
     print('Standard Deviation of Fund and $SPX: %s' % (std))
     print('Average Daily Return of Fund and $SPX: %s' % (mean))
 
-    plt.clf()
-    N = na_normalized_prices.shape[0]
-    plt.plot(np.arange(N), na_normalized_prices)
-    plt.legend(['Fund', '$SPX'], loc='upper left')
-    plt.ylabel('Normalized Prices')
-    plt.xlabel('Time')
-    plt.savefig('hw3.pdf', format='pdf')
+    if image:
+        plt.clf()
+        N = na_normalized_prices.shape[0]
+        plt.plot(np.arange(N), na_normalized_prices)
+        plt.legend(['Fund', '$SPX'], loc='upper left')
+        plt.ylabel('Normalized Prices')
+        plt.xlabel('Time')
+        plt.savefig('hw3.pdf', format='pdf')
 
 
 def read_orders(fname):
@@ -106,7 +107,7 @@ def read_orders(fname):
 def output_values(ldt_timestamps, values):
     rs = zip(ldt_timestamps, values)
     lines = map(lambda x: '%d,%d,%d,%d' %
-               (x[0].year, x[0].month, x[0].day, x[1]), rs)
+                (x[0].year, x[0].month, x[0].day, x[1]), rs)
     for x in lines:
         print(x)
 
