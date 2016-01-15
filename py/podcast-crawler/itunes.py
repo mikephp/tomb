@@ -12,8 +12,6 @@ from config import *
 
 from pymongo import MongoClient
 import pymongo
-from pymongo import InsertOne, DeleteOne, ReplaceOne
-
 
 import gevent
 from gevent.pool import Pool
@@ -31,6 +29,8 @@ import re
 
 # ====================
 # migrate db from mysql to mongo
+# at first I use mysql, it turns out mongodb is much easier to use.
+# especially at the very first time, prototype.
 from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import *
@@ -42,8 +42,8 @@ from sqlalchemy.orm import sessionmaker
 Session = sessionmaker(bind=Engine)
 Client = MongoClient(MONGO_URL)
 DB = Client.pdcast
-TCache = DB.cache
-TPlaylist = DB.playlist
+TCache = DB['cache']
+TPlaylist = DB['playlist']
 
 
 class Podcast(Base):
@@ -84,8 +84,7 @@ def copy_cache():
         if r:
             continue
         doc = {'key': cr.mykey,
-               'tag': cr.tag,
-               'value': cr.value,
+               'tag': cr.tag, 'value': cr.value,
                'updateDate': cr.updateDate}
         docs.append(doc)
         if len(docs) >= 1000:
@@ -99,14 +98,13 @@ def copy_cache():
 # ====================
 
 
-class MongoObject(object):
-
-    def __init__(self, js):
-        self.__dict__ = js
+class Document(object):
 
     @classmethod
     def from_json(cls, js):
-        return cls(js)
+        x = cls()
+        x.__dict__ = js
+        return x
 
     def to_json(self):
         return self.__dict__
@@ -137,7 +135,7 @@ def make_combination(shuffle=False):
 
 def down_index(comb):
     pool = Pool(size=8)
-    URL = 'https://itunes.apple.com/%s/genre/id%d?mt=2'
+    URL = 'http://itunes.apple.com/%s/genre/id%d?mt=2'
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=INDEX_CACHE_EXPIRE_DAYS)
 
@@ -145,7 +143,7 @@ def down_index(comb):
         def f(country, genre):
             index_key = 'idx_%s_%d' % (country, genre)
             cr = TCache.find_one({'key': index_key})
-            if cr and cr.updateDate > expireDate:
+            if cr and cr['updateDate'] > expireDate:
                 # print('DOWN INDEX CACHED. (%s, %d)' % (country, genre))
                 return
 
@@ -197,17 +195,18 @@ def parse_index_1(country, genre):
         pids.add(pid)
         r = TPlaylist.find_one({'pid': pid})
         if not r:
-            r = {'pid': pid,
-                 'country': [country],
-                 'genres': [genre],
-                 'title': title}
+            r = Document.from_json({'pid': pid,
+                                    'country': [country],
+                                    'genres': [genre],
+                                    'title': title})
         else:
+            r = Document.from_json(r)
             r.title = title
             if not country in r.country:
                 r.country.append(country)
             if not genre in r.genres:
                 r.genres.append(genre)
-        TPlaylist.update_one({'pid': pid}, r, upsert=True)
+        TPlaylist.replace_one({'pid': pid}, r.to_json(), upsert=True)
     print('PARSE INDEX DONE')
 
 
@@ -225,11 +224,11 @@ def down_lookup():
     def f(pid):
         lookup_key = 'lkp_%d' % (pid)
         cr = TCache.find_one({'key': lookup_key})
-        if cr and cr.updateDate > expireDate:
+        if cr and cr['updateDate'] > expireDate:
             # print('DOWN LOOKUP CACHED. pid = %d' % (pid))
             return
         print('DOWN LOOKUP. pid = %d' % pid)
-        url = 'https://itunes.apple.com/lookup?id=%d' % (pid)
+        url = 'http://itunes.apple.com/lookup?id=%d' % (pid)
         res = requests.get(url)
         if res.status_code != 200:
             print("DOWN LOOKUP FAILED. url = %s code = %d" %
@@ -244,11 +243,11 @@ def down_lookup():
                      'tag': 'lookup'}
         cache['value'] = value
         cache['updateDate'] = now
-        TCache.update_one({'key': lookup_key}, cache, upsert=True)
+        TCache.replace_one({'key': lookup_key}, cache, upsert=True)
         time.sleep(1)
 
     for pid in pids:
-        g = gevent.spawn(f, pid)
+        g = gevent.spawn(f, pid['pid'])
         pool.add(g)
     pool.join()
     print('DOWN LOOKUP DONE')
@@ -279,7 +278,7 @@ def collect_genres():
             store[genre] = genreId
 
     for pid in pids:
-        g = gevent.spawn(f, pid)
+        g = gevent.spawn(f, pid['pid'])
         pool.add(g)
     pool.join()
     print(store)
@@ -328,9 +327,10 @@ def parse_lookup():
         for x in genresId:
             if x in r.genres:
                 r.genres.append(x)
-        TPlaylist.update_one({'pid': pid}, r)
+        TPlaylist.replace_one({'pid': pid}, r.to_json())
 
     for r in rs:
+        r = Document.from_json(r)
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
@@ -361,7 +361,7 @@ def down_feed():
                   (pid, url))
             return
         if res.status_code != 200:
-            print('DOWN FEED FAILED. pid = %d, url = %s http-code = %d' %
+            print('DOWN FEED FAILED. pid = %d, url = %s code = %d' %
                   (pid, url, res.status_code))
             if res.status_code in (403, 404):
                 r.skip = 1
@@ -439,7 +439,7 @@ def parse_feed():
         try:
             extract_detail(r, now, value)
         except Exception as e:
-            print('PARSE FEED FAILED. error = %s' % (e))
+            print('PARSE FEED FAILED. error = %d' % (e))
             return
         TPlaylist.update_one({'pid': pid}, r)
 
@@ -450,9 +450,9 @@ def parse_feed():
     print('PARSE FEED DONE')
 
 if __name__ == '__main__':
-    create_table()
+    # create_table()
     # copy_cache()
-    collect_genres()
+
     comb = make_combination()
     if 'index' in sys.argv:
         down_index(comb)
@@ -463,3 +463,5 @@ if __name__ == '__main__':
     if 'feed' in sys.argv:
         down_feed()
         parse_feed()
+    if 'genre' in sys.argv:
+        collect_genres()

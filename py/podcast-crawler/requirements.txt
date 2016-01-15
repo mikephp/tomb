@@ -6,4 +6,4 @@ feedparser
 MySQL-python
 PyMySQL
 elasticsearch>=2.0.0,<3.0.0
-pymongo
+pymongo>=3.2
