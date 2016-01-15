@@ -143,9 +143,9 @@ from bs4 import BeautifulSoup
 import re
 
 
-def func_on_comb(comb, f):
+def func_on_comb(comb, f, *args):
     for (country, genre) in comb:
-        f(country, genre)
+        f(country, genre, *args)
 
 
 def parse_index_1(country, genre):
@@ -232,6 +232,47 @@ def down_lookup_1(country, genre):
     pool.join()
     session.commit()
     session.close()
+
+
+def collect_genres_1(country, genre, store):
+    session = Session()
+    rs = [u for u in session.query(Podcast).filter_by(
+        country=country, genre=genre)]
+    pool = Pool(size=32)
+
+    def f(r):
+        pid = r.pid
+        lookup_key = 'lookup_%d' % (pid)
+        cr = session.query(Cache).filter_by(
+            mykey=lookup_key, tag='lookup').first()
+        if not cr:
+            print('LOOKUP NOT EXISTED. pid = %d' % (pid))
+            return
+        json = json_lib.loads(cr.value)
+        if json['resultCount'] != 1:
+            if json['resultCount'] != 0:
+                print('PARSE LOOKUP FAILED. result count %d. pid = %d' %
+                      (json['resultCount'], pid))
+            session.add(r)
+            sesson.commit()
+            return
+        data = json['results'][0]
+        genreIds = map(lambda x: int(x), data['genreIds'])
+        genres = data['genres']
+        for (idx, genreId) in enumerate(genreIds):
+            genre = genres[idx]
+            store[genreId] = genre
+    for r in rs:
+        g = gevent.spawn(f, r)
+        pool.add(g)
+    pool.join()
+
+
+def collect_genres(comb):
+    store = {}
+    func_on_comb(comb, collect_genres_1, store)
+    for k in store.keys():
+        print k, store[k]
 
 
 def parse_lookup_1(country, genre):
@@ -414,9 +455,10 @@ def parse_feed_1(country, genre):
 
 if __name__ == '__main__':
     comb = make_combination()
-    down_index(comb)
-    func_on_comb(comb, parse_index_1)
-    func_on_comb(comb, down_lookup_1)
-    func_on_comb(comb, parse_lookup_1)
-    func_on_comb(comb, down_feed_1)
-    func_on_comb(comb, parse_feed_1)
+    # down_index(comb)
+    # func_on_comb(comb, parse_index_1)
+    # func_on_comb(comb, down_lookup_1)
+    # func_on_comb(comb, parse_lookup_1)
+    # func_on_comb(comb, down_feed_1)
+    # func_on_comb(comb, parse_feed_1)
+    collect_genres(comb)

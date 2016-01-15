@@ -11,7 +11,7 @@ LOOKUP_CACHE_EXPIRE_DAYS = 365
 FEED_CACHE_EXPIRE_DAYS = 365
 FORCE_PARSE_LOOKUP = False
 FORCE_PARSE_FEED = False
-TEST_ON_US = True
+TEST_ON_US = False
 
 try:
     from local_config import *
