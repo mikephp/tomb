@@ -10,6 +10,27 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 from config import *
 
+from pymongo import MongoClient
+import pymongo
+from pymongo import InsertOne, DeleteOne, ReplaceOne
+
+
+import gevent
+from gevent.pool import Pool
+import random
+import requests
+import os
+import urllib2
+
+import datetime as dt
+import json as json_lib
+import time
+
+from bs4 import BeautifulSoup
+import re
+
+# ====================
+# migrate db from mysql to mongo
 from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import *
@@ -19,6 +40,10 @@ Engine = create_engine('mysql+mysqldb://%s:%s@%s/%s' %
 Base = declarative_base()
 from sqlalchemy.orm import sessionmaker
 Session = sessionmaker(bind=Engine)
+Client = MongoClient(MONGO_URL)
+DB = Client.pdcast
+TCache = DB.cache
+TPlaylist = DB.playlist
 
 
 class Podcast(Base):
@@ -51,15 +76,49 @@ class Cache(Base):
     updateDate = Column(DateTime)
 
 
-Podcast.metadata.create_all(Engine)
-Cache.metadata.create_all(Engine)
+def copy_cache():
+    session = Session()
+    docs = []
+    for cr in session.query(Cache).all():
+        r = TCache.find_one({'key': cr.mykey})
+        if r:
+            continue
+        doc = {'key': cr.mykey,
+               'tag': cr.tag,
+               'value': cr.value,
+               'updateDate': cr.updateDate}
+        docs.append(doc)
+        if len(docs) >= 1000:
+            print('insert 1000 docs...')
+            TCache.insert_many(docs)
+            docs = []
+    if len(docs):
+        print('insert %d docs...' % (len(docs)))
+        TCache.insert_many(docs)
+    return
+# ====================
 
-import gevent
-from gevent.pool import Pool
-import random
-import requests
-import os
-import urllib2
+
+class MongoObject(object):
+
+    def __init__(self, js):
+        self.__dict__ = js
+
+    @classmethod
+    def from_json(cls, js):
+        return cls(js)
+
+    def to_json(self):
+        return self.__dict__
+
+
+def create_table():
+    TCache.create_index('key')
+    TCache.create_index('tag')
+    TPlaylist.create_index('pid')
+    TPlaylist.create_index('country')
+    TPlaylist.create_index('genre')
+    TPlaylist.create_index('lang')
 
 
 def make_combination(shuffle=False):
@@ -79,17 +138,17 @@ def make_combination(shuffle=False):
 def down_index(comb):
     pool = Pool(size=8)
     URL = 'https://itunes.apple.com/%s/genre/id%d?mt=2'
-    session = Session()
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=INDEX_CACHE_EXPIRE_DAYS)
+
     for (country, genre) in comb:
         def f(country, genre):
             index_key = 'idx_%s_%d' % (country, genre)
-            cr = session.query(Cache).filter_by(
-                mykey=index_key, tag='index').first()
+            cr = TCache.find_one({'key': index_key})
             if cr and cr.updateDate > expireDate:
                 # print('DOWN INDEX CACHED. (%s, %d)' % (country, genre))
                 return
+
             print('DOWN INDEX. (%s, %d)' % (country, genre))
             url = URL % (country, genre)
             res = requests.get(url)
@@ -101,36 +160,24 @@ def down_index(comb):
             if cr:
                 cache = cr
             else:
-                cache = Cache(
-                    mykey=index_key, tag='index')
-            cache.value = value
-            cache.updateDate = now
-            session.add(cache)
-            session.commit()
+                cache = {'key': index_key,
+                         'tag': 'index'}
+            cache['value'] = value
+            cache['updateDate'] = now
+            TCache.update_one({'key': index_key}, cache, upsert=True)
         g = gevent.spawn(f, country, genre)
         pool.add(g)
-
     pool.join()
-    session.commit()
-    session.close()
-
-from bs4 import BeautifulSoup
-import re
-
-
-def func_on_comb(comb, f, *args):
-    for (country, genre) in comb:
-        f(country, genre, *args)
+    print('DOWN INDEX DONE')
 
 
 def parse_index_1(country, genre):
-    session = Session()
     index_key = 'idx_%s_%d' % (country, genre)
-    r = session.query(Cache).filter_by(mykey=index_key, tag='index').first()
+    r = TCache.find_one({'key': index_key})
     if not r:
         print('INDEX NOT EXISTED. (%s, %d)' % (country, genre))
         return
-    data = r.value
+    data = r['value']
     bs = BeautifulSoup(data)
     pds = bs.select('div[id="selectedcontent"] ul li a')
     print('PARSE INDEX (%s, %d)' % (country, genre))
@@ -148,36 +195,36 @@ def parse_index_1(country, genre):
         if pid in pids:
             continue
         pids.add(pid)
-        r = session.query(Podcast).filter_by(pid=pid).first()
+        r = TPlaylist.find_one({'pid': pid})
         if not r:
-            r = Podcast(
-                pid=pid, country=country, genre=genre, title=title)
+            r = {'pid': pid,
+                 'country': [country],
+                 'genres': [genre],
+                 'title': title}
         else:
-            r.country = country
-            r.genre = genre
             r.title = title
-        session.add(r)
-    session.commit()
-    session.close()
+            if not country in r.country:
+                r.country.append(country)
+            if not genre in r.genres:
+                r.genres.append(genre)
+        TPlaylist.update_one({'pid': pid}, r, upsert=True)
+    print('PARSE INDEX DONE')
 
 
-import datetime as dt
-import json as json_lib
-import time
+def parse_index(comb):
+    for (country, genre) in comb:
+        parse_index_1(country, genre)
 
 
-def down_lookup_1(country, genre):
-    session = Session()
-    pids = [u.pid for u in session.query(Podcast).filter_by(
-        country=country, genre=genre)]
+def down_lookup():
+    pids = TPlaylist.find(PIDS_QUERY, projection=('pid',))
     pool = Pool(size=4)
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=LOOKUP_CACHE_EXPIRE_DAYS)
 
     def f(pid):
-        lookup_key = 'lookup_%d' % (pid)
-        cr = session.query(Cache).filter_by(
-            mykey=lookup_key, tag='lookup').first()
+        lookup_key = 'lkp_%d' % (pid)
+        cr = TCache.find_one({'key': lookup_key})
         if cr and cr.updateDate > expireDate:
             # print('DOWN LOOKUP CACHED. pid = %d' % (pid))
             return
@@ -193,34 +240,28 @@ def down_lookup_1(country, genre):
         if cr:
             cache = cr
         else:
-            cache = Cache(
-                mykey=lookup_key, tag='lookup')
-        cache.value = value
-        cache.updateDate = now
-        session.add(cache)
-        session.commit()
+            cache = {'key': lookup_key,
+                     'tag': 'lookup'}
+        cache['value'] = value
+        cache['updateDate'] = now
+        TCache.update_one({'key': lookup_key}, cache, upsert=True)
         time.sleep(1)
 
     for pid in pids:
         g = gevent.spawn(f, pid)
         pool.add(g)
     pool.join()
-    session.commit()
-    session.close()
+    print('DOWN LOOKUP DONE')
 
 
-def collect_genres_1(country, genre, store):
-    session = Session()
-    rs = [u for u in session.query(Podcast).filter_by(
-        country=country, genre=genre)]
+def collect_genres():
+    store = {}
+    pids = TPlaylist.find(PIDS_QUERY, projection=('pid', ))
     pool = Pool(size=8)
-    print('COLLECT GENRES ON (%s, %d)' % (country, genre))
 
-    def f(r):
-        pid = r.pid
-        lookup_key = 'lookup_%d' % (pid)
-        cr = session.query(Cache).filter_by(
-            mykey=lookup_key, tag='lookup').first()
+    def f(pid):
+        lookup_key = 'lkp_%d' % (pid)
+        cr = TCache.find_one({'key': lookup_key})
         if not cr:
             print('LOOKUP NOT EXISTED. pid = %d' % (pid))
             return
@@ -236,40 +277,33 @@ def collect_genres_1(country, genre, store):
         for (idx, genreId) in enumerate(genreIds):
             genre = genres[idx]
             store[genre] = genreId
-    for r in rs:
-        g = gevent.spawn(f, r)
+
+    for pid in pids:
+        g = gevent.spawn(f, pid)
         pool.add(g)
     pool.join()
-
-
-def collect_genres(comb):
-    store = {}
-    func_on_comb(comb, collect_genres_1, store)
     print(store)
+    print('COLLECT GENRES DONE')
 
 
-def parse_lookup_1(country, genre):
-    session = Session()
-    rs = [u for u in session.query(
-        Podcast).filter_by(country=country, genre=genre)]
+def parse_lookup():
+    rs = TPlaylist.find(PIDS_QUERY)
     pool = Pool(size=32)
 
     def f(r):
         pid = r.pid
-        lookup_key = 'lookup_%d' % (pid)
-        cr = session.query(Cache).filter_by(
-            mykey=lookup_key, tag='lookup').first()
+        lookup_key = 'lkp_%d' % (pid)
+        cr = TCache.find_one({'key': lookup_key})
         if not cr:
             print('LOOKUP NOT EXISTED. pid = %d' % (pid))
             return
         print('PARSE LOOKUP. pid = %d' % (pid))
+        # validate json data.
         json = json_lib.loads(cr.value)
         if json['resultCount'] != 1:
             if json['resultCount'] != 0:
                 print('PARSE LOOKUP FAILED. result count %d. pid = %d' %
                       (json['resultCount'], pid))
-            session.add(r)
-            session.commit()
             return
         data = json['results'][0]
         # some issues when comparing datetime.
@@ -278,8 +312,7 @@ def parse_lookup_1(country, genre):
                 r.feedUrl == data['feedUrl']:
             # print('PARSE LOOKUP CACHED. pid = %d' % (pid))
             return
-        # genreIds = map(lambda x: int(x), data['genreIds'])
-        genres = data['genres']
+        genresId = data['genresIds']
         if 'artworkUrl30' in data:
             r.cover30 = data['artworkUrl30']
         if 'releaseDate' in data:
@@ -292,23 +325,20 @@ def parse_lookup_1(country, genre):
             r.authorId = data['artistId']
         if 'artistName' in data:
             r.authorName = data['artistName'].encode('utf-8')
-        if 'genres' in data:
-            r.genreText = (','.join(data['genres'])).encode('utf-8')
-        session.add(r)
-        session.commit()
+        for x in genresId:
+            if x in r.genres:
+                r.genres.append(x)
+        TPlaylist.update_one({'pid': pid}, r)
 
     for r in rs:
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
-    session.commit()
-    session.close()
+    print('PARSE LOOKUP DONE')
 
 
-def down_feed_1(country, genre):
-    session = Session()
-    rs = [u for u in session.query(
-        Podcast).filter_by(country=country, genre=genre)]
+def down_feed():
+    rs = TPlaylist.find(PIDS_QUERY)
     pool = Pool(size=8)
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=FEED_CACHE_EXPIRE_DAYS)
@@ -318,8 +348,7 @@ def down_feed_1(country, genre):
             return
         pid = r.pid
         feed_key = 'feed_%d' % (pid)
-        cr = session.query(Cache).filter_by(
-            mykey=feed_key, tag='feed').first()
+        cr = TCache.find_one({'key': feed_key})
         if cr and cr.updateDate > expireDate:
             # print('DOWN FEED CACHED. pid = %d' % pid)
             return
@@ -330,36 +359,33 @@ def down_feed_1(country, genre):
         except:
             print('DOWN FEED FAILED. CONNECTION ERROR. pid = %d, url = %s' %
                   (pid, url))
-            session.add(r)
             return
         if res.status_code != 200:
             print('DOWN FEED FAILED. pid = %d, url = %s http-code = %d' %
                   (pid, url, res.status_code))
             if res.status_code in (403, 404):
                 r.skip = 1
-            session.add(r)
+                TPlaylist.update_one({'pid': pid}, r)
             return
         value = res.text.encode('utf-8')
         if len(value) > (1 << 21):
             r.skip = 1
-            session.add(r)
+            TPlaylist.update_one({'pid': pid}, r)
             return
         if cr:
             cache = cr
         else:
-            cache = Cache(
-                mykey=feed_key, tag='feed')
-        cache.value = value
-        cache.updateDate = now
-        session.add(cache)
-        session.commit()
+            cache = {'key': feed_key,
+                     'tag': 'feed'}
+        cache['value'] = value
+        cache['updateDate'] = now
+        TCache.update_one({'key': feed_key}, cache, upsert=True)
 
     for r in rs:
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
-    session.commit()
-    session.close()
+    print('DOWN FEED DONE')
 
 
 import feedparser
@@ -393,18 +419,15 @@ def extract_detail(r, now, data):
     r.parsedDate = now
 
 
-def parse_feed_1(country, genre):
-    session = Session()
-    rs = [u for u in session.query(Podcast).filter_by(
-        country=country, genre=genre)]
+def parse_feed():
+    r = TPlaylist.find(PIDS_QUERY)
     pool = Pool(size=32)
     now = dt.datetime.now()
 
     def f(r):
         pid = r.pid
         feed_key = 'feed_%d' % (pid)
-        cr = session.query(Cache).filter_by(
-            mykey=feed_key, tag='feed').first()
+        cr = TCache.find_one({'key': feed_key})
         if not cr:
             print('FEED NOT EXISTED. pid = %d' % (pid))
             return
@@ -418,25 +441,25 @@ def parse_feed_1(country, genre):
         except Exception as e:
             print('PARSE FEED FAILED. error = %s' % (e))
             return
-        session.add(r)
-        session.commit()
+        TPlaylist.update_one({'pid': pid}, r)
 
     for r in rs:
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
-    session.commit()
-    session.close()
+    print('PARSE FEED DONE')
 
 if __name__ == '__main__':
+    create_table()
+    # copy_cache()
+    collect_genres()
     comb = make_combination()
-    # collect_genres(comb)
     if 'index' in sys.argv:
         down_index(comb)
-        func_on_comb(comb, parse_index_1)
+        parse_index(comb)
     if 'lookup' in sys.argv:
-        func_on_comb(comb, down_lookup_1)
-        func_on_comb(comb, parse_lookup_1)
+        down_lookup()
+        parse_lookup()
     if 'feed' in sys.argv:
-        func_on_comb(comb, down_feed_1)
-        func_on_comb(comb, parse_feed_1)
+        down_feed()
+        parse_feed()

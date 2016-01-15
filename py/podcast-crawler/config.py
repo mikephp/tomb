@@ -6,6 +6,9 @@ DB_HOST = 'localhost'
 DB_NAME = 'pdcast'
 DB_USER = 'root'
 DB_PASS = '123456'
+
+MONGO_URL = 'mongodb://localhost:27017'
+
 INDEX_CACHE_EXPIRE_DAYS = 365
 LOOKUP_CACHE_EXPIRE_DAYS = 365
 FEED_CACHE_EXPIRE_DAYS = 365
@@ -23,8 +26,9 @@ ITUNES_COUNTRY_CODE = {
     'Costa Rica (English)': 'cr_en', 'Singapore (English)': 'sg_en', 'Kuwait': 'kw', 'Panama': 'pa', 'Costa Rica': 'cr', 'Luxembourg': 'lu', 'St. Kitts and Nevis': 'kn', 'Bahamas': 'bs', 'Ireland': 'ie', 'Italy (English)': 'it_en', 'Italy': 'it', 'Nigeria': 'ng', 'Taiwan (English)': 'tw_en', 'Ecuador': 'ec', 'Australia': 'au', 'Algeria': 'dz', 'El Salvador': 'sv', 'Finland (English)': 'fi_en', 'Argentina (English)': 'ar_en', 'Turks and Caicos': 'tc', 'Chile': 'cl', 'Belgium': 'be', 'Thailand': 'th', 'Belgium (English)': 'be_en', 'Hong Kong': 'hk', 'Sierra Leone': 'sl', 'Switzerland (Italian)': 'ch_it', 'Oman': 'om', 'St. Vincent and The Grenadines': 'vc', 'Gambia': 'gm', 'Philippines': 'ph', 'Uzbekistan': 'uz', 'Moldova': 'md', 'Paraguay (English)': 'py_en', 'Croatia': 'hr', 'Guatemala (English)': 'gt_en', 'Guinea-Bissau': 'gw', 'Switzerland': 'ch', 'Grenada': 'gd', 'Spain (English)': 'es_en', 'Belize': 'bz', 'Portugal': 'pt', 'Estonia': 'ee', 'Uruguay': 'uy', 'South Africa': 'za', 'Lebanon': 'lb', 'France (English)': 'fr_en', 'Tunisia': 'tn', 'United States (Spanish)': 'us_es', 'Antigua and Barbuda': 'ag', 'Spain': 'es', 'Colombia': 'co', 'Norway (English)': 'no_en', 'Vietnam (English)': 'vn_en', 'Taiwan': 'tw', 'Fiji': 'fj', 'Barbados': 'bb', 'Madagascar': 'mg', 'Belgium (French)': 'be_fr', 'Bhutan': 'bt', 'Nepal': 'np', 'Malta': 'mt', 'Honduras (English)': 'hn_en', 'Chile (English)': 'cl_en', 'Suriname': 'sr', 'Anguilla': 'ai', 'Venezuela': 've', 'Swaziland': 'sz', 'Israel': 'il', 'Lao': 'la', 'Indonesia': 'id', 'Iceland': 'is', 'Canada (French)': 'ca_fr', 'Senegal': 'sn', 'Papua New Guinea': 'pg', 'Thailand (English)': 'th_en', 'Trinidad and Tobago': 'tt', 'Germany': 'de', 'Denmark': 'dk', 'Kazakhstan': 'kz', 'Poland': 'pl', 'Ecuador (English)': 'ec_cn', 'Kyrgyzstan': 'kg', 'Montserrat': 'ms', 'Macedonia': 'mk', 'Mexico (English)': 'mx_en', 'Sri Lanka': 'lk', 'Korea': 'kr', 'Guyana': 'gy', 'Colombia (English)': 'co_en', 'Venezuela (English)': 've_en', 'Honduras': 'hn', 'Mexico': 'mx', 'Egypt': 'eg', 'Nicaragua': 'ni', 'Denmark (English)': 'dk_en', 'Switzerland (English)': 'ch_en', 'Austria (English)': 'at_en', 'United Kingdom': 'gb', 'Congo': 'cg', 'Greece': 'gr', 'Paraguay': 'py', 'Namibia': 'na', 'Bolivia (English)': 'bo_en', 'Botswana': 'bw'}
 
 if TEST_ON_US:
-    ITUNES_COUNTRY_CODE = {'United States': 'us', 'China': 'cn'}
-
+    PIDS_QUERY = {'country': {'$in': ['us']}}
+else:
+    PIDS_QUERY = {}
 
 ITUNES_PODCAST_GENRE_CODE = {
     'Arts': 1301,
