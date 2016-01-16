@@ -58,7 +58,7 @@ def simulate(orders, amount):
     return (ldt_timestamps, np.array(values))
 
 
-def compare_to_SPX(ldt_timestamps, values, image=True):
+def compare_to_SPX(ldt_timestamps, values, output_pdf='hw3.pdf'):
     c_dataobj = da.DataAccess('Yahoo')
     ldf_data = c_dataobj.get_data(ldt_timestamps, ['$SPX'], ['close'])
     spx_values = ldf_data[0].values
@@ -82,14 +82,13 @@ def compare_to_SPX(ldt_timestamps, values, image=True):
     print('Standard Deviation of Fund and $SPX: %s' % (std))
     print('Average Daily Return of Fund and $SPX: %s' % (mean))
 
-    if image:
-        plt.clf()
-        N = na_normalized_prices.shape[0]
-        plt.plot(np.arange(N), na_normalized_prices)
-        plt.legend(['Fund', '$SPX'], loc='upper left')
-        plt.ylabel('Normalized Prices')
-        plt.xlabel('Time')
-        plt.savefig('hw3.pdf', format='pdf')
+    plt.clf()
+    N = na_normalized_prices.shape[0]
+    plt.plot(np.arange(N), na_normalized_prices)
+    plt.legend(['Fund', '$SPX'], loc='upper left')
+    plt.ylabel('Normalized Prices')
+    plt.xlabel('Time')
+    plt.savefig(output_pdf, format='pdf')
 
 
 def read_orders(fname):
