@@ -264,7 +264,7 @@ def collect_genres():
         if not cr:
             print('LOOKUP NOT EXISTED. pid = %d' % (pid))
             return
-        json = json_lib.loads(cr.value)
+        json = json_lib.loads(cr['value'])
         if json['resultCount'] != 1:
             if json['resultCount'] != 0:
                 print('PARSE LOOKUP FAILED. result count %d. pid = %d' %
@@ -275,6 +275,8 @@ def collect_genres():
         genres = data['genres']
         for (idx, genreId) in enumerate(genreIds):
             genre = genres[idx]
+            # if genre == 'Islam':
+            #     print(pid)
             store[genre] = genreId
 
     for pid in pids:
@@ -298,7 +300,7 @@ def parse_lookup():
             return
         print('PARSE LOOKUP. pid = %d' % (pid))
         # validate json data.
-        json = json_lib.loads(cr.value)
+        json = json_lib.loads(cr['value'])
         if json['resultCount'] != 1:
             if json['resultCount'] != 0:
                 print('PARSE LOOKUP FAILED. result count %d. pid = %d' %
@@ -306,12 +308,12 @@ def parse_lookup():
             return
         data = json['results'][0]
         # some issues when comparing datetime.
-        if not FORCE_PARSE_LOOKUP and \
-                r.trackCount == data['trackCount'] and \
-                r.feedUrl == data['feedUrl']:
+        if (not FORCE_PARSE_LOOKUP) and \
+            (hasattr(r, 'trackCount') and r.trackCount == data['trackCount']) and \
+                (hasattr(r, 'feedUrl') and r.feedUrl == data['feedUrl']):
             # print('PARSE LOOKUP CACHED. pid = %d' % (pid))
             return
-        genresId = data['genresIds']
+        genreIds = map(lambda x: int(x), data['genreIds'])
         if 'artworkUrl30' in data:
             r.cover30 = data['artworkUrl30']
         if 'releaseDate' in data:
@@ -324,8 +326,8 @@ def parse_lookup():
             r.authorId = data['artistId']
         if 'artistName' in data:
             r.authorName = data['artistName'].encode('utf-8')
-        for x in genresId:
-            if x in r.genres:
+        for x in genreIds:
+            if not x in r.genres:
                 r.genres.append(x)
         TPlaylist.replace_one({'pid': pid}, r.to_json())
 
@@ -344,12 +346,12 @@ def down_feed():
     expireDate = now - dt.timedelta(days=FEED_CACHE_EXPIRE_DAYS)
 
     def f(r):
-        if r.skip:
+        if hasattr(r, 'skip') and r.skip:
             return
         pid = r.pid
         feed_key = 'feed_%d' % (pid)
         cr = TCache.find_one({'key': feed_key})
-        if cr and cr.updateDate > expireDate:
+        if cr and cr['updateDate'] > expireDate:
             # print('DOWN FEED CACHED. pid = %d' % pid)
             return
         url = r.feedUrl
@@ -365,12 +367,12 @@ def down_feed():
                   (pid, url, res.status_code))
             if res.status_code in (403, 404):
                 r.skip = 1
-                TPlaylist.update_one({'pid': pid}, r)
+                TPlaylist.replace_one({'pid': pid}, r.to_json())
             return
         value = res.text.encode('utf-8')
         if len(value) > (1 << 21):
             r.skip = 1
-            TPlaylist.update_one({'pid': pid}, r)
+            TPlaylist.replace_one({'pid': pid}, r.to_json())
             return
         if cr:
             cache = cr
@@ -379,9 +381,10 @@ def down_feed():
                      'tag': 'feed'}
         cache['value'] = value
         cache['updateDate'] = now
-        TCache.update_one({'key': feed_key}, cache, upsert=True)
+        TCache.replace_one({'key': feed_key}, cache, upsert=True)
 
     for r in rs:
+        r = Document.from_json(r)
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
@@ -420,7 +423,7 @@ def extract_detail(r, now, data):
 
 
 def parse_feed():
-    r = TPlaylist.find(PIDS_QUERY)
+    rs = TPlaylist.find(PIDS_QUERY)
     pool = Pool(size=32)
     now = dt.datetime.now()
 
@@ -431,19 +434,20 @@ def parse_feed():
         if not cr:
             print('FEED NOT EXISTED. pid = %d' % (pid))
             return
-        if not FORCE_PARSE_FEED and r.parsedDate and r.parsedDate >= cr.updateDate:
+        if not FORCE_PARSE_FEED and hasattr(r, 'parsedDate') and r.parsedDate >= cr['updateDate']:
             # print('PARSE FEED CACHED. pid = %d' % (pid))
             return
         print('PARSE FEED. pid = %d' % (pid))
-        value = cr.value
+        value = cr['value']
         try:
             extract_detail(r, now, value)
         except Exception as e:
             print('PARSE FEED FAILED. error = %d' % (e))
             return
-        TPlaylist.update_one({'pid': pid}, r)
+        TPlaylist.replace_one({'pid': pid}, r.to_json())
 
     for r in rs:
+        r = Document.from_json(r)
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
@@ -463,5 +467,5 @@ if __name__ == '__main__':
     if 'feed' in sys.argv:
         down_feed()
         parse_feed()
-    if 'genre' in sys.argv:
+    if 'genres' in sys.argv:
         collect_genres()
