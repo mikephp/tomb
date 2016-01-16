@@ -139,6 +139,7 @@ def down_index(comb):
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=INDEX_CACHE_EXPIRE_DAYS)
 
+    print('DOWN INDEX ...')
     for (country, genre) in comb:
         def f(country, genre):
             index_key = 'idx_%s_%d' % (country, genre)
@@ -166,7 +167,7 @@ def down_index(comb):
         g = gevent.spawn(f, country, genre)
         pool.add(g)
     pool.join()
-    print('DOWN INDEX DONE')
+    print('DOWN INDEX DONE.')
 
 
 def parse_index_1(country, genre):
@@ -194,6 +195,9 @@ def parse_index_1(country, genre):
             continue
         pids.add(pid)
         r = TPlaylist.find_one({'pid': pid})
+        if not FORCE_PARSE_INDEX and r:
+            # print('PARSE INDEX CACHED.')
+            continue
         if not r:
             r = Document.from_json({'pid': pid,
                                     'country': [country],
@@ -207,12 +211,13 @@ def parse_index_1(country, genre):
             if not genre in r.genres:
                 r.genres.append(genre)
         TPlaylist.replace_one({'pid': pid}, r.to_json(), upsert=True)
-    print('PARSE INDEX DONE')
 
 
 def parse_index(comb):
+    print('PARSE INDEX ...')
     for (country, genre) in comb:
         parse_index_1(country, genre)
+    print('PARSE INDEX DONE.')
 
 
 def down_lookup():
@@ -220,6 +225,8 @@ def down_lookup():
     pool = Pool(size=4)
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=LOOKUP_CACHE_EXPIRE_DAYS)
+
+    print('DOWN LOOKUP ...')
 
     def f(pid):
         lookup_key = 'lkp_%d' % (pid)
@@ -250,13 +257,15 @@ def down_lookup():
         g = gevent.spawn(f, pid['pid'])
         pool.add(g)
     pool.join()
-    print('DOWN LOOKUP DONE')
+    print('DOWN LOOKUP DONE.')
 
 
 def collect_genres():
     store = {}
     pids = TPlaylist.find(PIDS_QUERY, projection=('pid', ))
     pool = Pool(size=8)
+
+    print('COLLECT GENRES ...')
 
     def f(pid):
         lookup_key = 'lkp_%d' % (pid)
@@ -284,12 +293,14 @@ def collect_genres():
         pool.add(g)
     pool.join()
     print(store)
-    print('COLLECT GENRES DONE')
+    print('COLLECT GENRES DONE.')
 
 
 def parse_lookup():
     rs = TPlaylist.find(PIDS_QUERY)
     pool = Pool(size=32)
+
+    print('PARSE LOOKUP ...')
 
     def f(r):
         pid = r.pid
@@ -336,7 +347,7 @@ def parse_lookup():
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
-    print('PARSE LOOKUP DONE')
+    print('PARSE LOOKUP DONE.')
 
 
 def down_feed():
@@ -344,6 +355,8 @@ def down_feed():
     pool = Pool(size=8)
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=FEED_CACHE_EXPIRE_DAYS)
+
+    print('DOWN FEED ...')
 
     def f(r):
         if hasattr(r, 'skip') and r.skip:
@@ -388,7 +401,7 @@ def down_feed():
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
-    print('DOWN FEED DONE')
+    print('DOWN FEED DONE.')
 
 
 import feedparser
@@ -427,6 +440,8 @@ def parse_feed():
     pool = Pool(size=32)
     now = dt.datetime.now()
 
+    print('PARSE FEED ...')
+
     def f(r):
         pid = r.pid
         feed_key = 'feed_%d' % (pid)
@@ -451,7 +466,7 @@ def parse_feed():
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
-    print('PARSE FEED DONE')
+    print('PARSE FEED DONE.')
 
 if __name__ == '__main__':
     # create_table()
