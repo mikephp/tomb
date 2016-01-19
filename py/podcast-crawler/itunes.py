@@ -27,75 +27,10 @@ import time
 from bs4 import BeautifulSoup
 import re
 
-# ====================
-# migrate db from mysql to mongo
-# at first I use mysql, it turns out mongodb is much easier to use.
-# especially at the very first time, prototype.
-from sqlalchemy import *
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.mysql import *
-
-Engine = create_engine('mysql+mysqldb://%s:%s@%s/%s' %
-                       (DB_USER, DB_PASS, DB_HOST, DB_NAME), encoding='utf-8', echo=False, pool_recycle=3600)
-Base = declarative_base()
-from sqlalchemy.orm import sessionmaker
-Session = sessionmaker(bind=Engine)
 Client = MongoClient(MONGO_URL)
 DB = Client.pdcast
 TCache = DB['cache']
 TPlaylist = DB['playlist']
-
-
-class Podcast(Base):
-    __tablename__ = 'itunes'
-    # from itunes
-    pid = Column(Integer, primary_key=True)
-    country = Column(String(16), index=True)
-    genre = Column(Integer, index=True)
-    __table_args__ = (Index('country_genre', "country", "genre"), )
-    title = Column(TEXT)
-    authorId = Column(Integer)
-    authorName = Column(TEXT)
-    feedUrl = Column(TEXT)
-    cover30 = Column(TEXT)
-    releaseDate = Column(DateTime)
-    trackCount = Column(Integer)
-    genreText = Column(TEXT)
-    skip = Column(Integer)  # should we skip it?
-    wellFormed = Column(Integer)  # content of feedUrl is well-formed?
-    parsedDate = Column(DateTime)  # when this feedUrl is parsed.
-    description = Column(TEXT)
-    lang = Column(String(16), index=True)
-
-
-class Cache(Base):
-    __tablename__ = 'cache'
-    mykey = Column(String(255), primary_key=True)
-    tag = Column(String(16), index=True)
-    value = Column(MEDIUMTEXT)
-    updateDate = Column(DateTime)
-
-
-def copy_cache():
-    session = Session()
-    docs = []
-    for cr in session.query(Cache).all():
-        r = TCache.find_one({'key': cr.mykey})
-        if r:
-            continue
-        doc = {'key': cr.mykey,
-               'tag': cr.tag, 'value': cr.value,
-               'updateDate': cr.updateDate}
-        docs.append(doc)
-        if len(docs) >= 1000:
-            print('insert 1000 docs...')
-            TCache.insert_many(docs)
-            docs = []
-    if len(docs):
-        print('insert %d docs...' % (len(docs)))
-        TCache.insert_many(docs)
-    return
-# ====================
 
 
 class Document(object):
@@ -124,7 +59,8 @@ def make_combination(shuffle=False):
     for country in ITUNES_COUNTRY_CODE.values():
         if country.find('_') != -1:
             continue
-        for genre in ITUNES_PODCAST_GENRE_CODE.values():
+        for genre in ITUNES_PODCAST_ALL_GENRE_CODE.values():
+            # for genre in ITUNES_PODCAST_GENRE_CODE.values(): # to bootstrap
             comb.append((country, genre))
     if shuffle:
         random.shuffle(comb)
@@ -136,6 +72,8 @@ def make_combination(shuffle=False):
 def down_index(comb):
     pool = Pool(size=8)
     URL = 'http://itunes.apple.com/%s/genre/id%d?mt=2'
+    if USE_HTTPS:
+        URL = 'https://itunes.apple.com/%s/genre/id%d?mt=2'
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=INDEX_CACHE_EXPIRE_DAYS)
 
@@ -144,7 +82,7 @@ def down_index(comb):
         def f(country, genre):
             index_key = 'idx_%s_%d' % (country, genre)
             cr = TCache.find_one({'key': index_key})
-            if cr and cr['updateDate'] > expireDate:
+            if not FORCE_DOWN_INDEX and cr and cr['updateDate'] > expireDate:
                 # print('DOWN INDEX CACHED. (%s, %d)' % (country, genre))
                 return
 
@@ -155,7 +93,7 @@ def down_index(comb):
                 print('DOWN INDEX FAILED. url = %s code = %d' %
                       (url, res.status_code))
                 return
-            value = res.text.encode('utf-8')
+            value = res.content
             if cr:
                 cache = cr
             else:
@@ -163,7 +101,7 @@ def down_index(comb):
                          'tag': 'index'}
             cache['value'] = value
             cache['updateDate'] = now
-            TCache.update_one({'key': index_key}, cache, upsert=True)
+            TCache.replace_one({'key': index_key}, cache, upsert=True)
         g = gevent.spawn(f, country, genre)
         pool.add(g)
     pool.join()
@@ -184,7 +122,7 @@ def parse_index_1(country, genre):
     for pd in pds:
         title = pd.get_text().encode('utf-8')
         link = pd.attrs['href']
-        m = re.search(r'/id(\d+)\?mt=2', link)
+        m = re.search(r'/id(\d+)\?', link)
         try:
             pid = int(m.groups(1)[0])
         except:
@@ -195,14 +133,13 @@ def parse_index_1(country, genre):
             continue
         pids.add(pid)
         r = TPlaylist.find_one({'pid': pid})
-        if not FORCE_PARSE_INDEX and r:
-            # print('PARSE INDEX CACHED.')
-            continue
         if not r:
             r = Document.from_json({'pid': pid,
                                     'country': [country],
                                     'genres': [genre],
+                                    'weight': 0.0,
                                     'title': title})
+            TPlaylist.insert_one(r.to_json())
         else:
             r = Document.from_json(r)
             r.title = title
@@ -210,7 +147,7 @@ def parse_index_1(country, genre):
                 r.country.append(country)
             if not genre in r.genres:
                 r.genres.append(genre)
-        TPlaylist.replace_one({'pid': pid}, r.to_json(), upsert=True)
+            TPlaylist.replace_one({'pid': pid}, r.to_json())
 
 
 def parse_index(comb):
@@ -226,23 +163,25 @@ def down_lookup():
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=LOOKUP_CACHE_EXPIRE_DAYS)
 
+    URL = 'http://itunes.apple.com/lookup?id=%d'
+    if USE_HTTPS:
+        URL = 'https://itunes.apple.com/lookup?id=%d'
     print('DOWN LOOKUP ...')
 
     def f(pid):
         lookup_key = 'lkp_%d' % (pid)
         cr = TCache.find_one({'key': lookup_key})
-        if cr and cr['updateDate'] > expireDate:
+        if not FORCE_DOWN_LOOKUP and cr and cr['updateDate'] > expireDate:
             # print('DOWN LOOKUP CACHED. pid = %d' % (pid))
             return
         print('DOWN LOOKUP. pid = %d' % pid)
-        url = 'http://itunes.apple.com/lookup?id=%d' % (pid)
+        url = URL % (pid)
         res = requests.get(url)
         if res.status_code != 200:
             print("DOWN LOOKUP FAILED. url = %s code = %d" %
                   (url, res.status_code))
             return
-        # print(res.encoding)
-        value = res.text.encode('utf-8')
+        value = res.content
         if cr:
             cache = cr
         else:
@@ -316,14 +255,10 @@ def parse_lookup():
             if json['resultCount'] != 0:
                 print('PARSE LOOKUP FAILED. result count %d. pid = %d' %
                       (json['resultCount'], pid))
+            r.skip = 1
+            TPlaylist.replace_one({'pid': pid}, r.to_json())
             return
         data = json['results'][0]
-        # some issues when comparing datetime.
-        if (not FORCE_PARSE_LOOKUP) and \
-            (hasattr(r, 'trackCount') and r.trackCount == data['trackCount']) and \
-                (hasattr(r, 'feedUrl') and r.feedUrl == data['feedUrl']):
-            # print('PARSE LOOKUP CACHED. pid = %d' % (pid))
-            return
         genreIds = map(lambda x: int(x), data['genreIds'])
         if 'artworkUrl30' in data:
             r.cover30 = data['artworkUrl30']
@@ -364,7 +299,7 @@ def down_feed():
         pid = r.pid
         feed_key = 'feed_%d' % (pid)
         cr = TCache.find_one({'key': feed_key})
-        if cr and cr['updateDate'] > expireDate:
+        if not FORCE_DOWN_INDEX and cr and cr['updateDate'] > expireDate:
             # print('DOWN FEED CACHED. pid = %d' % pid)
             return
         url = r.feedUrl
@@ -382,8 +317,8 @@ def down_feed():
                 r.skip = 1
                 TPlaylist.replace_one({'pid': pid}, r.to_json())
             return
-        value = res.text.encode('utf-8')
-        if len(value) > (1 << 21):
+        value = res.content
+        if len(value) > (1 << 20):
             r.skip = 1
             TPlaylist.replace_one({'pid': pid}, r.to_json())
             return
@@ -409,28 +344,33 @@ import xml.dom.minidom
 
 
 def extract_detail(r, now, data):
-    detail = {'lang': '',
-              'desc': ''}
+    language = ""
+    description = ""
     try:
         dom = xml.dom.minidom.parseString(data)
         d = dom.getElementsByTagName(
             'description') or dom.getElementsByTagName('itunes:summary')
         if d:
-            detail['desc'] = d[0].firstChild.data
+            description = d[0].firstChild.data
         d = dom.getElementsByTagName('language')
         if d:
-            detail['lang'] = d[0].firstChild.data
+            language = d[0].firstChild.data
     except:
         d = feedparser.parse(data)
         feed = d['feed']
         if 'description' in feed:
-            detail['desc'] = feed['description']
+            description = feed['description']
         if 'summary' in feed:
-            detail['desc'] = feed['summary']
+            description = feed['summary']
         if 'language' in feed:
-            detail['lang'] = feed['language']
-    r.description = detail['desc'].encode('utf-8').strip()
-    r.lang = detail['lang'].encode('utf-8').strip()
+            language = feed['language']
+    if not isinstance(description, str) and not isinstance(description, unicode):
+        print('EXTRACT DETAIL. description not string but %s' %
+              (type(description)))
+    if not isinstance(language, str) and not isinstance(language, unicode):
+        print('EXTRACT DETAIL. language not string but %s' % (type(language)))
+    r.description = description.encode('utf-8')
+    r.language = language.encode('utf-8')
     r.wellFormed = 1
     r.parsedDate = now
 
@@ -468,10 +408,143 @@ def parse_feed():
     pool.join()
     print('PARSE FEED DONE.')
 
-if __name__ == '__main__':
-    # create_table()
-    # copy_cache()
 
+def down_trend(comb):
+    pool = Pool(size=8)
+    URL = 'http://itunes.apple.com/%s/rss/toppodcasts/limit=100/genre=%d/xml'
+    URL_ALL = 'http://itunes.apple.com/%s/rss/toppodcasts/limit=100/xml'
+    if USE_HTTPS:
+        URL = 'https://itunes.apple.com/%s/rss/toppodcasts/limit=100/genre=%d/xml'
+        URL_ALL = 'https://itunes.apple.com/%s/rss/toppodcasts/limit=100/xml'
+    now = dt.datetime.now()
+    expireDate = now - dt.timedelta(days=TREND_CACHE_EXPIRE_DAYS)
+
+    print('DOWN TREND ...')
+    for (country, genre) in comb:
+        def f(country, genre):
+            trend_key = 'trd_%s_%d' % (country, genre)
+            cr = TCache.find_one({'key': trend_key})
+            if not FORCE_DOWN_TREND and cr and cr['updateDate'] > expireDate:
+                # print('DOWN TREND CACHED. (%s, %d)' % (country, genre))
+                return
+            print('DOWN TREND. (%s, %d)' % (country, genre))
+            if genre == 0:  # so special.
+                url = URL_ALL % (country)
+            else:
+                url = URL % (country, genre)
+            res = requests.get(url)
+            if res.status_code != 200:
+                print('DOWN TREND FAILED. url = %s code = %d' % (
+                    url, res.status_code))
+            value = res.content
+            if cr:
+                cache = cr
+            else:
+                cache = {'key': trend_key,
+                         'tag': 'trend'}
+            cache['value'] = value
+            cache['updateDate'] = now
+            TCache.replace_one({'key': trend_key}, cache, upsert=True)
+        g = gevent.spawn(f, country, genre)
+        pool.add(g)
+        pass
+    for country in ITUNES_COUNTRY_CODE.values():
+        if country.find('_') != -1:
+            continue
+        g = gevent.spawn(f, country, 0)
+        pool.add(g)
+    pool.join()
+    print('DOWN TREND DONE.')
+
+
+def extract_pids(data):
+    dom = xml.dom.minidom.parseString(data)
+    entries = dom.getElementsByTagName('entry')
+    pids = []
+    for entry in entries:
+        x = entry.getElementsByTagName('id')[0]
+        pid = int(x.getAttribute('im:id'))
+        pids.append(pid)
+    return pids
+
+
+def parse_trend(comb):
+    pool = Pool(size=32)
+    decay = 0.75
+
+    print('PARSE TREND ...')
+    for (country, genre) in comb:
+        def f(country, genre):
+            trend_key = 'trd_%s_%d' % (country, genre)
+            cr = TCache.find_one({'key': trend_key})
+            if not cr:
+                print('TREND NOT EXISTED. (%s, %d)' % (country, genre))
+                return
+            data = cr['value']
+            pids = extract_pids(data)
+            pids = pids[::-1]
+            gs = str(genre)
+            for (idx, pid) in enumerate(pids):
+                r = TPlaylist.find_one({'pid': pid})
+                if not r:
+                    print('PARSE TREND PID NOT EXISTED. pid = %d' % (pid))
+                    continue
+                if not 'gw' in r:
+                    r['gw'] = {}
+                if not gs in r['gw']:
+                    r['gw'][gs] = 0.0
+                if not '0' in r['gw']:
+                    r['gw']['0'] = 0.0
+                weight = 1.05 ** (idx + 1) * decay / (1.05 * 100)
+                weight += r['gw'][gs] * (1 - decay)
+                r['gw'][gs] = weight
+                w = 0.0
+                sz = len(r['gw'])
+                for k in r['gw'].keys():
+                    if k == '0':
+                        w += r['gw'][k] * 0.6
+                    else:
+                        w += r['gw'][k] * 0.4 / (sz - 1)
+                r['weight'] = w
+                TPlaylist.replace_one({'pid': pid}, r)
+        g = gevent.spawn(f, country, genre)
+        pool.add(g)
+        pass
+    for country in ITUNES_COUNTRY_CODE.values():
+        if country.find('_') != -1:
+            continue
+        g = gevent.spawn(f, country, 0)
+        pool.add(g)
+    pool.join()
+
+    # results = []
+    # for (name, country) in ITUNES_COUNTRY_CODE.items():
+    #     if country.find('_') != -1:
+    #         continue
+    #     rs = []
+    #     trend_key = 'trd_%s_%d' % (country, 0)
+    #     cr = TCache.find_one({'key': trend_key})
+    #     if not cr:
+    #         print('TREND NOT EXISTED. (%s, %d)' % (country, 0))
+    #         continue
+    #     data = cr['value']
+    #     print('parse country %s' % (country))
+    #     dom = xml.dom.minidom.parseString(data)
+    #     entries = dom.getElementsByTagName('entry')[:25]
+    #     rs = map(lambda x: x.getElementsByTagName(
+    #         'title')[0].firstChild.data, entries)
+    #     results.append((name, country, rs))
+    # with open('output.txt', 'w') as fh:
+    #     for (name, country, rs) in results:
+    #         fh.write('--------------------%s(%s)--------------------\n' %
+    #                  (name, country))
+    #         for (idx, r) in enumerate(rs):
+    #             fh.write('%2d  %s\n' % (idx + 1, r))
+
+    print('PARSE TREND DONE.')
+
+if __name__ == '__main__':
+    create_table()
     comb = make_combination()
     if 'index' in sys.argv:
         down_index(comb)
@@ -484,3 +557,6 @@ if __name__ == '__main__':
         parse_feed()
     if 'genres' in sys.argv:
         collect_genres()
+    if 'trend' in sys.argv:
+        down_trend(comb)
+        parse_trend(comb)
