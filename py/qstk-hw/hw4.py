@@ -48,13 +48,11 @@ def find_events(ls_symbols, d_data, orders):
             # Event is found if the symbol is down more then 3% while the
             # market is up more then 2%
 
-            # what if against market.
-            if (f_symreturn_today <= -0.03 and f_marketreturn_today >= 0.02) or \
-                    (f_symreturn_today >= 0.03 and f_marketprice_yest <= -0.02):
+            if (f_symreturn_today <= -0.03 and f_marketreturn_today >= 0.02):
                 df_events[s_sym].ix[ldt_timestamps[i]] = 1
 
             # if f_symprice_yest >= PRICE and f_symprice_today < PRICE:
-                # df_events[s_sym].ix[ldt_timestamps[i]] = 1
+            # df_events[s_sym].ix[ldt_timestamps[i]] = 1
 
                 buy_ts = ldt_timestamps[i]
                 idx = (i + 12)
@@ -64,6 +62,7 @@ def find_events(ls_symbols, d_data, orders):
                     sell_ts = ldt_timestamps[idx]
                 orders.append((buy_ts, s_sym, 'Buy', 100))
                 orders.append((sell_ts, s_sym, 'Sell', 100))
+
     return df_events
 
 
