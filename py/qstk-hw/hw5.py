@@ -91,5 +91,5 @@ def bollinger_band(df_price, lookback=20, times=1, plot=False):
 
 if __name__ == '__main__':
     df_price = test_data()
-    (h, l, r) = bollinger_band(df_price, times=2, plot=True)
+    (h, l, r) = bollinger_band(df_price, times=1, plot=True)
     print r[80:120]
