@@ -67,6 +67,7 @@ def bollinger_band(df_price, lookback=20, times=1, plot=False):
 
             def plot_peak(ax, ro):
                 sz = ro.shape[0]
+                peaks = []
                 for (idx, r) in enumerate(ro):
                     peak = False
                     if r >= 1.0:
@@ -78,12 +79,17 @@ def bollinger_band(df_price, lookback=20, times=1, plot=False):
                                 (idx < (sz - 1) and r < ro[idx + 1]):
                             peak = True
                     if peak:
-                        ax.axvline(idx, color='r')
-            # plot_peak(ax1, ratio[sym])
+                        # local peak
+                        peaks.append((idx, r))
+                # get global peaks.
+                for (i, p) in enumerate(peaks):
+                    ax.axvline(p[0], color='g')
+            plot_peak(ax1, ratio[sym])
+            plot_peak(ax2, ratio[sym])
             plt.savefig('hw5-%s.pdf' % (sym), format='pdf')
     return (higher, lower, ratio)
 
 if __name__ == '__main__':
     df_price = test_data()
-    (h, l, r) = bollinger_band(df_price, times=1, plot=True)
+    (h, l, r) = bollinger_band(df_price, times=2, plot=True)
     print r[80:120]
