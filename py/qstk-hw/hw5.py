@@ -43,25 +43,27 @@ def test_data():
 
 
 def bollinger_band(df_price, lookback=20, times=1, plot=False):
-    rmean_df = pd.rolling_mean(df_price, 20)
-    rstd_df = pd.rolling_std(df_price, 20)
-    ratio = (df_price - rmean_df) / (times * rstd_df)
-    higher = rmean_df + times * rstd_df
-    lower = rmean_df - times * rstd_df
+    df_mean = pd.rolling_mean(df_price, 20)
+    df_std = pd.rolling_std(df_price, 20)
+    df_bb_ratio = (df_price - df_mean) / (times * df_std)
+    df_high = df_mean + times * df_std
+    df_low = df_mean - times * df_std
     if plot:
         for sym in df_price.columns:
             plt.clf()
             fig, (ax1, ax2) = plt.subplots(2, 1)
-            ax1.plot(df_price[sym])
-            ax1.plot(lower[sym], color='#a0a0a0')
-            ax1.plot(higher[sym], color='#a0a0a0')
-            ax1.fill_between(np.arange(len(lower)), lower[
-                             sym], higher[sym], facecolor='#e0e0e0', alpha=0.5)
+            ax1.plot(df_price[sym], label=sym)
+            ax1.plot(df_mean[sym], label='rolling mean')
+            ax1.plot(df_low[sym], color='#a0a0a0')
+            ax1.plot(df_high[sym], color='#a0a0a0')
+            ax1.fill_between(np.arange(len(df_low)), df_low[
+                             sym], df_high[sym], facecolor='#e0e0e0', alpha=0.5)
             ax1.set_ylabel('Adjusted Close')
+            ax1.legend(loc='best')
 
-            ax2.plot(ratio[sym])
+            ax2.plot(df_bb_ratio[sym])
             ymin, ymax = ax2.get_ylim()
-            ax2.axvspan(0, len(lower) - 1, ymin=(-1.0 - ymin) / (ymax - ymin),
+            ax2.axvspan(0, len(df_low) - 1, ymin=(-1.0 - ymin) / (ymax - ymin),
                         ymax=(1.0 - ymin) / (ymax - ymin), facecolor='#e0e0e0', alpha=0.5)
             ax2.set_ylabel('Bollinger Feature')
 
@@ -84,12 +86,12 @@ def bollinger_band(df_price, lookback=20, times=1, plot=False):
                 # get global peaks.
                 for (i, p) in enumerate(peaks):
                     ax.axvline(p[0], color='g')
-            plot_peak(ax1, ratio[sym])
-            plot_peak(ax2, ratio[sym])
+            plot_peak(ax1, df_bb_ratio[sym])
+            plot_peak(ax2, df_bb_ratio[sym])
             plt.savefig('hw5-%s.pdf' % (sym), format='pdf')
-    return (higher, lower, ratio)
+    return (df_high, df_low, df_bb_ratio)
 
 if __name__ == '__main__':
     df_price = test_data()
-    (h, l, r) = bollinger_band(df_price, times=1, plot=True)
+    (h, l, r) = bollinger_band(df_price, times=2, plot=True)
     print r[80:120]
