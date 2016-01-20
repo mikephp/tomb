@@ -32,6 +32,11 @@ DB = Client.pdcast
 TCache = DB['cache']
 TPlaylist = DB['playlist']
 
+from requests.adapters import HTTPAdapter
+Session = requests.Session()
+Session.mount('http://', HTTPAdapter(max_retries=MAX_RETRY_NUMBER))
+Session.mount('https://', HTTPAdapter(max_retries=MAX_RETRY_NUMBER))
+
 
 class Document(object):
 
@@ -115,7 +120,7 @@ def parse_index_1(country, genre):
         print('INDEX NOT EXISTED. (%s, %d)' % (country, genre))
         return
     data = r['value']
-    bs = BeautifulSoup(data)
+    bs = BeautifulSoup(data, "lxml")
     pds = bs.select('div[id="selectedcontent"] ul li a')
     print('PARSE INDEX (%s, %d)' % (country, genre))
     pids = set()
@@ -234,6 +239,41 @@ def collect_genres():
     print(store)
     print('COLLECT GENRES DONE.')
 
+import os
+
+
+def collect_genres2():
+    URL = 'http://itunes.apple.com/%s/genre/id26?mt=2'
+    if USE_HTTPS:
+        URL = 'https://itunes.apple.com/%s/genre/id26?mt=2'
+    store = {}
+    if not os.path.exists('cache'):
+        os.mkdir('cache')
+    rex = re.compile(r'id(\d+)\?')
+    for country in ITUNES_COUNTRY_CODE.values():
+        if country.find('_') != -1:
+            continue
+        fname = 'cache/genre-%s.list' % (country)
+        if not os.path.exists(fname):
+            r = requests.get(URL % country)
+            data = r.content
+            with open(fname, 'w') as fh:
+                fh.write(data)
+        else:
+            data = open(fname).read()
+        bs = BeautifulSoup(data, "lxml")
+        rs = bs.select('#genre-nav > div > ul > li > ul > li > a')
+        gs = {}
+        for r in rs:
+            link = r.attrs['href']
+            m = re.search(rex, link)
+            gid = int(m.groups(1)[0])
+            text = r.get_text().encode('utf-8')
+            gs[gid] = text
+        store[country] = gs
+    with open('genres.json', 'w') as fh:
+        json_lib.dump(store, fh)
+
 
 def parse_lookup():
     rs = TPlaylist.find(PIDS_QUERY)
@@ -286,12 +326,18 @@ def parse_lookup():
 
 
 def down_feed():
-    rs = TPlaylist.find(PIDS_QUERY)
+    # pymongo.errors.CursorNotFound
+    rs = TPlaylist.find(PIDS_QUERY, no_cursor_timeout=True)
     pool = Pool(size=8)
     now = dt.datetime.now()
     expireDate = now - dt.timedelta(days=FEED_CACHE_EXPIRE_DAYS)
 
     print('DOWN FEED ...')
+
+    def skip_it(r, comment):
+        r.skip = 1
+        r.comment = comment
+        TPlaylist.replace_one({'pid': r.pid}, r.to_json())
 
     def f(r):
         if hasattr(r, 'skip') and r.skip:
@@ -309,18 +355,24 @@ def down_feed():
         except:
             print('DOWN FEED FAILED. CONNECTION ERROR. pid = %d, url = %s' %
                   (pid, url))
+            skip_it(r, 'ECONN')
             return
         if res.status_code != 200:
             print('DOWN FEED FAILED. pid = %d, url = %s code = %d' %
                   (pid, url, res.status_code))
             if res.status_code in (403, 404):
-                r.skip = 1
-                TPlaylist.replace_one({'pid': pid}, r.to_json())
+                skip_it(r, 'E404')
             return
         value = res.content
+        # unicode decode error.
+        try:
+            value = value.encode('utf-8')
+        except:
+            skip_it(r, 'EUTF8')
+            return
+
         if len(value) > (1 << 20):
-            r.skip = 1
-            TPlaylist.replace_one({'pid': pid}, r.to_json())
+            skip_it(r, 'EBIG')
             return
         if cr:
             cache = cr
@@ -556,7 +608,8 @@ if __name__ == '__main__':
         down_feed()
         parse_feed()
     if 'genres' in sys.argv:
-        collect_genres()
+        # collect_genres()
+        collect_genres2()
     if 'trend' in sys.argv:
         down_trend(comb)
         parse_trend(comb)
