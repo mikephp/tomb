@@ -149,21 +149,21 @@ def homework():
     find_best_port(2010, ['C', 'GS', 'IBM', 'HNZ'])
 
 
-def plot_comparsion(year, symbols, xsym):
+def plot_performance(year, symbols, sp500):
     dt_start = dt.datetime(year, 1, 1)
     dt_end = dt.datetime(year, 12, 31)
-    price_x = stock_price(dt_start, dt_end, [xsym])[:, 0]
+    price_x = stock_price(dt_start, dt_end, [sp500])[:, 0]
     price_port = find_best_port(year, symbols)
     plt.clf()
     N = price_port.size
     plt.plot(np.arange(N), price_x)
     plt.plot(np.arange(N), price_port)
-    plt.legend([xsym, 'my port'], loc='upper left')
+    plt.legend([sp500, 'my port'], loc='upper left')
     plt.ylabel('Normalized Price')
     plt.xlabel('Time')
     plt.savefig('hw1.pdf', format='pdf')
 
 if __name__ == '__main__':
-    # test_simulate()
-    # plot_comparsion(2011, ['AAPL', 'GLD', 'GOOG', 'XOM'], 'SPY')
+    test_simulate()
+    plot_performance(2011, ['AAPL', 'GLD', 'GOOG', 'XOM'], 'SPY')
     homework()
