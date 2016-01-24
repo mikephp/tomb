@@ -2,8 +2,6 @@
 # coding:utf-8
 # Copyright (C) dirlt
 
-from config import *
-
 from gevent import monkey
 monkey.patch_all()
 
@@ -142,11 +140,11 @@ def bollinger_band(df_price, lookback=20, ratio=2):
     return (df_mean, df_high, df_low, df_bb_ratio)
 
 
-def rev_bb(prices, ratio=2):
-    A = prices.shape[0] + 1
+def reverse_bollinger_band(df_price, ratio=2):
+    A = df_price.shape[0] + 1
     B = ratio
-    mean = np.mean(prices, axis=0)
-    std = np.std(prices, axis=0)
+    mean = np.mean(df_price, axis=0)
+    std = np.std(df_price, axis=0)
     C = (A - 1) * mean
     D = (A - 1) * (std ** 2 + mean ** 2)
     B2 = B ** 2
