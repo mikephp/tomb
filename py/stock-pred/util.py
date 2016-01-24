@@ -16,7 +16,7 @@ DB = Client.stock_pred
 TStockHistory = DB.history
 TStockHistory.create_index('Symbol')
 TStockHistory.create_index([('Symbol', pymongo.ASCENDING),
-                          ('Date', pymongo.DESCENDING)])
+                            ('Date', pymongo.DESCENDING)])
 
 
 import gevent
@@ -53,6 +53,8 @@ def fetch_data(dt_from, dt_to, sym):
         fetch_dt_from = min_dt_from
     elif r['Date'] < dt_to:
         fetch_dt_from = r['Date'] + dt.timedelta(days=1)
+        if fetch_dt_from > dt_to:
+            fetch_dt_from = None
     else:
         fetch_dt_from = None
     if fetch_dt_from:
@@ -67,9 +69,9 @@ def fetch_data(dt_from, dt_to, sym):
                 for k in ['Adj_Close', 'High', 'Low', 'Close', 'Volume']:
                     r[k] = np.float(r[k])
                 r['Date'] = dateutil.parser.parse(r['Date'])
-            if docs[-1]['Date'] != dt_to:
-                docs.append({'Date': dt_to, 'placeholder': 1})
             TStockHistory.insert_many(docs)
+        TStockHistory.insert_one(
+            {'Symbol': sym, 'Date': dt_to, 'placeholder': 1})
     data = TStockHistory.find(
         {'Symbol': sym, 'Date': {'$gte': dt_from, '$lte': dt_to}})
     rs = filter(lambda x: 'placeholder' not in x, [u for u in data])
