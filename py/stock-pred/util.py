@@ -12,6 +12,7 @@ import json
 
 import pymongo
 from pymongo import MongoClient
+MONGO_URL = 'mongodb://127.0.0.1:27017'
 Client = MongoClient(MONGO_URL)
 DB = Client.stock_pred
 TStockHistory = DB.history
@@ -86,7 +87,7 @@ def stock_data(dt_from, dt_to, ls_symbols):
         dates = map(lambda x: x['Date'], data)
         values = []
         for key in ls_keys:
-            v = np.array(map(lambda x: x[key], data)).reshape(-1, 1)
+            v = np.array(map(lambda x: np.float(x[key]), data)).reshape(-1, 1)
             values.append(v)
         values = np.hstack(values)
         df = pd.DataFrame(values, index=dates, columns=ls_keys)
@@ -98,6 +99,65 @@ def stock_data(dt_from, dt_to, ls_symbols):
         pool.add(g)
     pool.join()
     return d
+
+
+def returnize0(nds):
+    """
+    @summary Computes stepwise (usually daily) returns relative to 0, where
+    0 implies no change in value.
+    @return the array is revised in place
+    """
+    if type(nds) == type(pd.DataFrame()):
+        nds = (nds / nds.shift(1)) - 1.0
+        nds = nds.fillna(0.0)
+        return nds
+
+    s = np.shape(nds)
+    if len(s) == 1:
+        nds = np.expand_dims(nds, 1)
+    nds[1:, :] = (nds[1:, :] / nds[0:-1]) - 1
+    nds[0, :] = np.zeros(nds.shape[1])
+    return nds
+
+
+def _price(d_data, key):
+    values = map(lambda x: pd.Series(d_data[x][key], name=x), d_data)
+    return pd.concat(values, axis=1)
+
+
+def actual_close_price(d_data):
+    return _price(d_data, 'Close')
+
+
+def close_price(d_data):
+    return _price(d_data, 'Adj_Close')
+
+
+def bollinger_band(df_price, lookback=20, ratio=2):
+    df_mean = pd.rolling_mean(df_price, lookback)
+    df_std = pd.rolling_std(df_price, lookback)
+    df_bb_ratio = (df_price - df_mean) / (ratio * df_std)
+    df_high = df_mean + ratio * df_std
+    df_low = df_mean - ratio * df_std
+    return (df_mean, df_high, df_low, df_bb_ratio)
+
+
+def rev_bb(prices, ratio=2):
+    A = prices.shape[0] + 1
+    B = ratio
+    mean = np.mean(prices, axis=0)
+    std = np.std(prices, axis=0)
+    C = (A - 1) * mean
+    D = (A - 1) * (std ** 2 + mean ** 2)
+    B2 = B ** 2
+    a = (B2 - (A - 1)) * (A - 1)
+    b = 2 * C * (A - B2 - 1)
+    c = A * B2 * D - (B2 + 1) * (C ** 2)
+
+    common = np.sqrt(b ** 2 - 4 * a * c)
+    r0 = (common - b) * 0.5 / a
+    r1 = (-common - b) * 0.5 / a
+    return (r0, r1)
 
 if __name__ == '__main__':
     dt_from = dt.datetime(2014, 1, 1)
