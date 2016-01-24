@@ -18,7 +18,8 @@ ft = Stockfighter(VENUE, ACCOUNT)
 SLEEP = 3
 
 
-def xround(x): return x / 20 * 20
+def xround(x):
+    return x / 20 * 20
 
 
 class Order(object):
