@@ -189,8 +189,10 @@ def play_game1():
             else:
                 p = THRESHOLD
         # 市场价格不能波动太大, 并且要小于某个阈值.
-        if pp and p > pp:
-            p = min(pp + 40, p)
+        # if pp and p > pp:
+        #     p = min(pp + 40, p)
+        if pp:
+            p = p * 0.6 + pp * 0.4
         p = min(p, THRESHOLD)
         pp = p
 
