@@ -192,7 +192,7 @@ def play_game1():
         # if pp and p > pp:
         #     p = min(pp + 40, p)
         if pp:
-            p = p * 0.6 + pp * 0.4
+            p = int(p * 0.6 + pp * 0.4)
         p = min(p, THRESHOLD)
         pp = p
 
