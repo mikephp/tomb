@@ -4,13 +4,35 @@
 
 from util import *
 
-import hashlib
 import datetime as dt
+import traceback
 
 import feedparser
 import xml.dom.minidom
 import gevent
 from gevent.pool import Pool
+
+FORCE_ALL = 2
+FORCE_PARSE = 1
+
+
+def check_feed(force):
+    # to avoid exception of CursorNotFound.
+    rs = TPlaylist.find(PIDS_QUERY, projection=(
+        'feedUrl',), no_cursor_timeout=True)
+    pool = Pool(size=8)
+    now = dt.datetime.now()
+    expireDate = now - dt.timedelta(days=FEED_CACHE_EXPIRE_DAYS)
+
+    print('CHECK FEED ...')
+    for r in rs:
+        if 'feedUrl' not in r:
+            continue
+        url = r['feedUrl']
+        g = gevent.spawn(down_feed, url, now, expireDate, force)
+        pool.add(g)
+    pool.join()
+    print('CHECK FEED DONE.')
 
 
 def skip(r, comment):
@@ -19,28 +41,29 @@ def skip(r, comment):
     TCache.replace_one({'key': r.key}, r.to_json(), upsert=True)
 
 
-def down_feed(url, now, expireDate, pid=None, force=False):
-    sign = str(pid)
-    if not sign:
-        sign = hashlib.sha1(url).hexdigest()
-    feed_key = 'feed_%s' % (sign)
+def down_feed(url, now, expireDate, force):
+    feed_key = get_feed_key(url)
     cr = TCache.find_one({'key': feed_key})
-    # 如果缓存存在并且'skip'的话，说明这个源其实是存在问题的
+    # 如果缓存存在并且'skip'的话，说明这个源其实是存在问题的. 直接忽略
     if cr and cr.get('skip', 0):
         print('DOWN FEED SKIP. url = %s' % (url))
         return
-    if not force and cr and cr['updateDate'] > expireDate:
+
+    if force == FORCE_PARSE and cr and 'value' in cr:
+        parse_feed(url, cr['value'], now)
+        return
+
+    # 如果cache没有过期的话也忽略
+    if not force and cr and 'updateDate' in cr and cr['updateDate'] > expireDate:
         # print('DOWN FEED CACHED. url = %s' % (url))
         return
+
     if cr:
         r = Document.from_json(cr)
     else:
         r = Document.from_json({'key': feed_key,
-                                'tag': 'feed'})
-        # 从非itunes上来的.
-        if not pid:
-            r.tag = 'feed2'
-            r.url = url
+                                'tag': 'feed',
+                                'url': url})
     print('DOWN FEED. url = %s' % (url))
 
     # 通过HTTP头部来判断是否可以Cache.
@@ -50,11 +73,11 @@ def down_feed(url, now, expireDate, pid=None, force=False):
         res = requests.head(url, timeout=10, headers=headers)
     except:
         print('DOWN FEED FAILED. CONNECTION ERROR. url = %s' % (url))
-        # skip(r, 'ECONN')
-        # save(r)
         return
     # HTTP Not Modified or Content-Length is same.
-    if res.status_code == 304 or headers.get('Content-Length', '') == r.headers.get('Content-Length', 'X'):
+    # TODO: 301. redirect.
+    if res.status_code == 304 or \
+            headers.get('Content-Length', '') == r.headers.get('Content-Length', 'X'):
         print('DOWN FEED OK. NOT MODIFIED. url = %s' % (url))
         r.updateDate = now
         TCache.replace_one({'key': r.key}, r.to_json(), upsert=True)
@@ -72,8 +95,7 @@ def down_feed(url, now, expireDate, pid=None, force=False):
     try:
         res = requests.get(url, timeout=10)
     except:
-        # skip(r, 'ECONN')
-        # save(r)
+        print('DOWN FEED FAILED. CONNECTION ERROR. url = %s' % (url))
         return
     if res.status_code != 200:
         print('DOWN FEED FAILED. url = %s code = %d' % (url, res.status_code))
@@ -100,122 +122,79 @@ def down_feed(url, now, expireDate, pid=None, force=False):
         r.headers['If-None-Match'] = res.headers['ETag']
     if 'Content-Length' in res.headers:
         r.headers['Content-Length'] = res.headers['Content-Length']
+    parse_feed(url, value, now)
     TCache.replace_one({'key': r.key}, r.to_json(), upsert=True)
 
 
-def down_feed_itunes(force=False):
-    # to avoid exception of CursorNotFound.
-    rs = TPlaylist.find(PIDS_QUERY, projection=(
-        'feedUrl', 'pid',), no_cursor_timeout=True)
-    pool = Pool(size=8)
-    now = dt.datetime.now()
-    expireDate = now - dt.timedelta(days=FEED_CACHE_EXPIRE_DAYS)
-
-    print('DOWN FEED ITUNES ...')
-    for r in rs:
-        pid = r['pid']
-        if 'feedUrl' not in r:
-            continue
-        url = r['feedUrl']
-        g = gevent.spawn(down_feed, url, now, expireDate, pid, force)
-        pool.add(g)
-    pool.join()
-    print('DOWN FEED ITUNES DONE.')
-
-
-def extract_detail(r, data, now):
-    title = ""
-    language = ""
-    description = ""
-    cover = ""
-    author = ""
-    releaseDate = ""
-    trackCount = 0
-    try:
-        dom = xml.dom.minidom.parseString(data)
-        d = dom.getElementsByTagName('title')
-        title = d[0].firstChild.data if d else ""
-        d = dom.getElementsByTagName('language')
-        language = d[0].firstChild.data if d else ""
-        d = dom.getElementsByTagName('itunes:summary') or dom.getElementsByTagName(
-            'description')
-        description = d[0].firstChild.data if d else ""
-        d = dom.getElementsByTagName('itunes:image')
-        cover = d[0].getAttribute('href') if d else ""
-        d = dom.getElementsByTagName('itunes:author')
-        author = d[0].firstChild.data if d else ""
-        d = dom.getElementsByTagName('pubDate')
-        releaseDate = d[0].firstChild.data if d else ""
-        d = dom.getElementsByTagName('item')
-        trackCount = len(d)
-    except:
-        d = feedparser.parse(data)
-        feed = d['feed']
-        language = feed.get('language', '')
-        title = feed.get('title', '')
-        description = feed.get('summary', '') or feed.get('description', '')
-        author = feed.get('author', '')
-        releaseDate = d.entries[0].published
-        trackCount = len(d.entries)
-        cover = feed.image.href if 'image' in feed and 'href' in feed.image else ""
-    r.title = title.encode('utf-8')
-    r.language = language.encode('utf-8')
+def extract_detail(r, data):
+    dom = feedparser.parse(data)
+    feed = dom['feed']
+    r.language = feed.get('language', '').encode('utf-8')
+    r.title = feed.get('title', '').encode('utf-8')
+    description = feed.get('summary', '') or feed.get('description', '')
     r.description = description.encode('utf-8')
-    r.cover = cover
-    r.author = author.encode('utf-8')
-    r.releaseDate = releaseDate
-    r.trackCount = trackCount
+    r.author = feed.get('author', '').encode('utf-8')
+    r.releaseDate = dom.entries[0].published
+    r.trackCount = len(dom.entries)
+    r.cover = feed.image.href if 'image' in feed and 'href' in feed.image else ""
     r.parsed = 1
-    r.parsedDate = now
 
 
-import dateutil.parser
+def parse_feed(url, value, now):
+    print('PARSE FEED. url = %s' % (url))
+    feed_key = get_feed_key(url)
+    r = TPodcast.find_one({'key': feed_key})
+    if not r:
+        r = {'key': feed_key,
+             'feedUrl': url}
+    r = Document.from_json(r)
+    try:
+        extract_detail(r, value)
+        r.parsedDate = now
+    except Exception as e:
+        print('PARSE FEED FAILED. url = %s' % (url))
+        # traceback.print_exc()
+        return
+    TPodcast.replace_one({'key': feed_key}, r.to_json(), upsert=True)
 
 
-def parse_feed_itunes(force=False):
+def back_fill_itunes(force):
     rs = TPlaylist.find(PIDS_QUERY)
-    pool = Pool(size=32)
-    now = dt.datetime.now()
-
-    print('PARSE FEED ITUNES ...')
+    pool = Pool(size=8)
+    print('BACK FILL ITUNES ...')
 
     def f(r):
-        pid = r.pid
-        feed_key = 'feed_%d' % (pid)
-        cr = TCache.find_one({'key': feed_key})
-        if not cr:
-            print('FEED NOT EXISTED. pid = %d' % (pid))
-            return
-        if 'skip' in cr and cr['skip']:
-            print('FEED SKIPPED. pid = %d' % (pid))
-            return
-        key = hashlib.sha1(r.feedUrl).hexdigest()
-        r2 = TPodcast.find_one({'key': key})
+        url = r.feedUrl
+        feed_key = get_feed_key(url)
+        r2 = TPodcast.find_one({'key': feed_key})
         if not r2:
-            r2 = {'key': key,
-                  'feedUrl': r.feedUrl,
-                  'itunes_id': pid,
-                  'country': r.country,
-                  'genres': r.genres}
+            # print('BACK FILL ITUNES. Podcast not found. url = %s feed_key = %s' %
+            #       (url, feed_key))
+            r2 = {'key': feed_key,
+                  'feedUrl': url}
         r2 = Document.from_json(r2)
-        if not force and hasattr(r2, 'parsedDate') and r2.parsedDate >= cr['releaseDate']:
-            # print('PARSE FEED ITUNES CACHED. url = %s' % (r.feedUrl))
+        if not force and getattr(r2, 'itunes_id', 0):
+            # print('BACK FILL ITUNES. Podcast cached.')
             return
-        print('PARSE FEED ITUNES. url = %s' % (r.feedUrl))
-        value = cr['value']
-        try:
-            extract_detail(r2, value, now)
-        except Exception as e:
-            print('PARSE FEED FAILED. error = %s' % (e))
-            return
+        r2.itunes_id = r.pid
+        r2.itunes_cover = getattr(r, 'cover30', '')
+        country = getattr(r2, 'country', [])
         for x in r.country:
-            if not x in r2.country:
-                r2.country.append(x)
+            if x not in country:
+                country.append(x)
+        r2.country = country
+        genres = getattr(r2, 'genres', [])
         for x in r.genres:
-            if not x in r2.genres:
-                r2.genres.append(x)
-        TPodcast.replace_one({'key': r2.key}, r2.to_json(), upsert=True)
-
+            if x not in genres:
+                genres.append(x)
+        r2.genres = genres
+        r2.title = getattr(r2, 'title', '') or getattr(r, 'title', '')
+        r2.author = getattr(r2, 'author', '') or getattr(r, 'authorName', '')
+        r2.trackCount = getattr(
+            r2, 'trackCount', 0) or getattr(r, 'trackCount', 0)
+        r2.releaseDate = getattr(
+            r2, 'releaseDate', '') or getattr(r, 'releaseDate', '')
+        TPodcast.replace_one({'key': feed_key}, r2.to_json(), upsert=True)
     for r in rs:
         if 'feedUrl' not in r:
             continue
@@ -223,11 +202,24 @@ def parse_feed_itunes(force=False):
         g = gevent.spawn(f, r)
         pool.add(g)
     pool.join()
-    print('PARSE FEED ITUNES DONE.')
+    print('BACK FILL ITUNES DONE')
 
 if __name__ == '__main__':
-    if '--feed' in sys.argv:
-        (fd, fp) = ('--force-down-feed-itunes' in sys.argv,
-                    '--force-parse-feed-itunes' in sys.argv)
-        down_feed_itunes(fd)
-        parse_feed_itunes(fp)
+    import argparse
+    parser = argparse.ArgumentParser()
+    args = ['--feed', '--force', '--force-only-parse',
+            '--back-fill']
+    for arg in args:
+        parser.add_argument(arg, action='store_true')
+    args = parser.parse_args()
+
+    force = 0
+    if args.force:
+        force = FORCE_ALL
+    if args.force_only_parse:
+        force = FORCE_PARSE
+
+    if args.feed:
+        check_feed(force)
+    if args.back_fill:
+        back_fill_itunes(force)

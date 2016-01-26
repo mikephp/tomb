@@ -36,19 +36,75 @@ ITUNES_PODCAST_ALL_GENRE_CODE = {
     'Arts': 1301, 'Regional': 1474, 'Natural Sciences': 1477, 'Fitness & Nutrition': 1417, 'Podcasting': 1450, 'Games & Hobbies': 1323, 'Science & Medicine': 1315, 'Performing Arts': 1405, 'Sports & Recreation': 1316, 'Christianity': 1439, 'Spirituality': 1444, 'Kids & Family': 1305, 'Other': 1464, 'Music': 1310, 'Educational Technology': 1468, 'Medicine': 1478, 'Tech News': 1448, 'Comedy': 1303, 'Local': 1475, 'Social Sciences': 1479, 'Careers': 1410, 'Personal Journals': 1302, 'Philosophy': 1443, 'Literature': 1401, 'Shopping': 1472, 'Business': 1321, 'Food': 1306, 'Automotive': 1454, 'Video Games': 1404, 'Language Courses': 1469, 'Investing': 1412, 'Software How-To': 1480, 'College & High School': 1466,
     'Aviation': 1455, 'Non-Profit': 1476, 'Training': 1470, 'Higher Education': 1416, 'Judaism': 1441, 'Government & Organizations': 1325, 'Business News': 1471, 'Religion & Spirituality': 1314, 'K-12': 1415, 'Alternative Health': 1481, 'News & Politics': 1311, 'Podcasts': 26, 'Places & Travel': 1320, 'Sexuality': 1421, 'Other Games': 1461, 'Self-Help': 1420, 'Amateur': 1467, 'Professional': 1465, 'TV & Film': 1309, 'History': 1462, 'Hinduism': 1463, 'Visual Arts': 1406, 'Fashion & Beauty': 1459, 'Outdoor': 1456, 'Management & Marketing': 1413, 'Society & Culture': 1324, 'National': 1473, 'Buddhism': 1438, 'Gadgets': 1446, 'Design': 1402, 'Hobbies': 1460, 'Health': 1307, 'Education': 1304, 'Technology': 1318, 'Islam': 1440}
 
+GENRE_RELATIONSHIP = {
+    '1301': ['1402', '1459', '1306', '1401', '1405', '1406'],
+    '1321': ['1471', '1410', '1412', '1413', '1472'],
+    '1303': [],
+    '1304': ['1468', '1416', '1415', '1469', '1470'],
+    '1323': ['1454', '1455', '1460', '1461', '1404'],
+    '1325': ['1475', '1473', '1476', '1474'],
+    '1307': ['1481', '1417', '1420', '1421'],
+    '1305': [],
+    '1310': [],
+    '1311': [],
+    '1314': ['1438', '1439', '1463', '1440', '1441', '1464', '1444'],
+    '1315': ['1478', '1477', '1479'],
+    '1324': ['1462', '1302', '1443', '1320'],
+    '1316': ['1467', '1466', '1456', '1465'],
+    '1309': [],
+    '1318': ['1446', '1450', '1480', '1448'],
+}
+
 MAX_RETRY_NUMBER = 5
 MONGO_URL = 'mongodb://localhost:27017'
+REDIS_URL = ('localhost', 6379, 0)
 USE_HTTPS = True
 
 # itunes settings
-INDEX_CACHE_EXPIRE_DAYS = 7
+INDEX_CACHE_EXPIRE_DAYS = 14
 LOOKUP_CACHE_EXPIRE_DAYS = 365 * 20
-TREND_CACHE_EXPIRE_DAYS = 7
+TREND_CACHE_EXPIRE_DAYS = 14
 PIDS_QUERY = {}
 
 # podcast settings
 FEED_CACHE_EXPIRE_DAYS = 14
 MAX_FEED_SIZE = 1 << 21
+
+WEB_DEBUG = False
+
+import logging
+import logging.handlers
+
+LOGGING_CONFIG = {
+    'version': 1,
+    'formatters': {
+        'precise': {
+            'format': '[%(asctime)s][%(levelname)s]%(name)s@%(funcName)s: %(msg)s'
+        },
+        'brief': {
+            'format': '[%(asctime)s][%(levelname)s]%(msg)s'
+        }
+    },
+    'handlers': {
+        'file': {
+            'class': 'logging.FileHandler',
+            'formatter': 'precise',
+            'level': logging.INFO,
+            'filename': 'app.log',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'precise',
+            'level': logging.DEBUG,
+        },
+    },
+    'loggers': {
+    },
+    'root': {
+        'level': logging.DEBUG,
+        'handlers': ['file'],
+    }
+}
 
 try:
     from local_config import *

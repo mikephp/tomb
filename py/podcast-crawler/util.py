@@ -28,6 +28,13 @@ TCache = DB['cache']
 # itunes playlist
 TPlaylist = DB['playlist']
 TPodcast = DB['feed']
+TWeight = DB['weight']
+TTopList = DB['toplist']
+
+import redis
+RedisClient = redis.StrictRedis(host=REDIS_URL[0],
+                                port=REDIS_URL[1],
+                                db=REDIS_URL[2])
 
 # requests settings.
 from requests.adapters import HTTPAdapter
@@ -40,15 +47,26 @@ TCache.create_index('tag')
 
 TPlaylist.create_index('pid')
 TPlaylist.create_index('country')
-TPlaylist.create_index('genre')
+TPlaylist.create_index('genres')
 
 TPodcast.create_index('key')
+TPodcast.create_index('itunes_id')
 TPodcast.create_index('country')
-TPodcast.create_index('genre')
+TPodcast.create_index('genres')
 TPodcast.create_index('language')
 
+TWeight.create_index('key')
+TTopList.create_index('key')
+
 import json as json_lib
+
 with open('genres.json') as fh:
     GENRES_MAPPING = json_lib.load(fh)
 with open('genres_all.json') as fh:
     GENRES_ALL_MAPPING = json_lib.load(fh)
+
+import hashlib
+
+
+def get_feed_key(feedUrl):
+    return hashlib.sha1(feedUrl).hexdigest()
