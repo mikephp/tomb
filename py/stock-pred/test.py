@@ -30,12 +30,12 @@ def sharpe_ratio():
     ls_symbols = ['AAPL', 'AMZN', 'GOOG', 'FB',
                   'MSFT', 'SPY', 'NFLX', 'BABA', 'JD']
     d_data = get_stock_data(ls_symbols)
-    df_price = util.close_price(d_data)
+    df_price = util.close_price(d_data)[-120:]
     df_rets = util.returnize0(df_price)
     df_mean = np.mean(df_rets)
     df_std = np.std(df_rets)
     sr = df_mean / df_std
-    rs = zip(ls_symbols, sr.values)
+    rs = zip(sr.index, sr.values)
     rs.sort(lambda x, y: -cmp(x[1], y[1]))
     for (sym, v) in rs:
         print('%5s: %.4f' % (sym, v))
