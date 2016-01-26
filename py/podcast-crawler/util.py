@@ -10,6 +10,7 @@ import requests
 
 
 class Document(object):
+
     """Mongo Document"""
 
     @classmethod
@@ -45,3 +46,9 @@ TPodcast.create_index('key')
 TPodcast.create_index('country')
 TPodcast.create_index('genre')
 TPodcast.create_index('language')
+
+import json as json_lib
+with open('genres.json') as fh:
+    GENRES_MAPPING = json_lib.load(fh)
+with open('genres_all.json') as fh:
+    GENRES_ALL_MAPPING = json_lib.load(fh)

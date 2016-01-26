@@ -185,16 +185,23 @@ def collect_genres():
             data = open(fname).read()
         bs = BeautifulSoup(data)
         rs = bs.select('#genre-nav > div > ul > li > ul > li > a')
+        rs2 = bs.select('#genre-nav > div > ul > li > a')
         gs = {}
-        for r in rs:
+        for r in rs + rs2:
             link = r.attrs['href']
             m = re.search(rex, link)
             gid = int(m.groups(1)[0])
             text = r.get_text().encode('utf-8')
             gs[gid] = text
         store[country] = gs
-    with open('genres.json', 'w') as fh:
+    with open('genres_all.json', 'w') as fh:
         json_lib.dump(store, fh)
+    store2 = {}
+    for (country, genres) in store.items():
+        store2[country] = {v: genres[v]
+                           for v in ITUNES_PODCAST_GENRE_CODE.values()}
+    with open('genres.json', 'w') as fh:
+        json_lib.dump(store2, fh)
 
 
 def parse_lookup(force=False):
