@@ -70,8 +70,6 @@ def fetch_data(dt_from, dt_to, sym):
                     r[k] = np.float(r[k])
                 r['Date'] = dateutil.parser.parse(r['Date'])
             TStockHistory.insert_many(docs)
-        TStockHistory.insert_one(
-            {'Symbol': sym, 'Date': dt_to, 'placeholder': 1})
     data = TStockHistory.find(
         {'Symbol': sym, 'Date': {'$gte': dt_from, '$lte': dt_to}})
     rs = filter(lambda x: 'placeholder' not in x, [u for u in data])

@@ -20,9 +20,11 @@ def buy_or_sell_price():
     ls_symbols = ['JD', 'TEAM', 'NFLX', 'FB']
     d_data = get_stock_data(ls_symbols)
     df_price = util.close_price(d_data)
-    (buy, sell) = util.reverse_bollinger_band(df_price[-20:], ratio=2)
-    for sym in ls_symbols:
-        print('%5s: buy@%.2f sell@%.2f' % (sym, buy[sym], sell[sym]))
+    for r in (1, 2):
+        print('>>> ratio = %d <<<' % r)
+        (buy, sell) = util.reverse_bollinger_band(df_price[-20:], ratio=r)
+        for sym in ls_symbols:
+            print('%5s: buy@%.2f sell@%.2f' % (sym, buy[sym], sell[sym]))
 
 
 def sharpe_ratio():
