@@ -25,13 +25,19 @@ def check_feed(force):
     expireDate = now - dt.timedelta(days=FEED_CACHE_EXPIRE_DAYS)
 
     print('CHECK FEED ...')
+    ctx = {'skip': 0,
+           'cache': 0,
+           'econn': 0,
+           'total': 0}
     for r in rs:
         if 'feedUrl' not in r:
             continue
         url = r['feedUrl']
-        g = gevent.spawn(down_feed, url, now, expireDate, force)
+        ctx['total'] += 1
+        g = gevent.spawn(down_feed, ctx, url, now, expireDate, force)
         pool.add(g)
     pool.join()
+    print('CHECK FEED ctx = {}'.format(ctx))
     print('CHECK FEED DONE.')
 
 
@@ -41,12 +47,13 @@ def skip(r, comment):
     TCache.replace_one({'key': r.key}, r.to_json(), upsert=True)
 
 
-def down_feed(url, now, expireDate, force):
+def down_feed(ctx, url, now, expireDate, force):
     feed_key = get_feed_key(url)
     cr = TCache.find_one({'key': feed_key})
     # 如果缓存存在并且'skip'的话，说明这个源其实是存在问题的. 直接忽略
     if cr and cr.get('skip', 0):
-        print('DOWN FEED SKIP. url = %s' % (url))
+        # print('DOWN FEED SKIP. url = %s' % (url))
+        ctx['skip'] += 1
         return
 
     if force == FORCE_PARSE and cr and 'value' in cr:
@@ -56,6 +63,7 @@ def down_feed(url, now, expireDate, force):
     # 如果cache没有过期的话也忽略
     if not force and cr and 'updateDate' in cr and cr['updateDate'] > expireDate:
         # print('DOWN FEED CACHED. url = %s' % (url))
+        ctx['cache'] += 1
         return
 
     if cr:
@@ -72,7 +80,9 @@ def down_feed(url, now, expireDate, force):
     try:
         res = requests.head(url, timeout=10, headers=headers)
     except:
-        print('DOWN FEED FAILED. CONNECTION ERROR. url = %s' % (url))
+        # print('DOWN FEED FAILED. CONNECTION ERROR. url = %s' % (url))
+        ctx['econn'] += 1
+        skip(r, 'ECONN')
         return
     # HTTP Not Modified or Content-Length is same.
     # TODO: 301. redirect.
@@ -87,7 +97,9 @@ def down_feed(url, now, expireDate, force):
         code = res.status_code
         skip(r, 'E%d' % (code))
         return
-    if int(r.headers.get('Content-Length', '0')) > MAX_FEED_SIZE:
+    if int(r.headers.get('Content-Length', 0)) > MAX_FEED_SIZE:
+        print('DOWN FEED FAILED. url = %s size = %d' %
+              (url, int(r.headers.get('Content-Length', 0))))
         skip(r, 'EBIG')
         return
 
@@ -95,7 +107,9 @@ def down_feed(url, now, expireDate, force):
     try:
         res = requests.get(url, timeout=10)
     except:
-        print('DOWN FEED FAILED. CONNECTION ERROR. url = %s' % (url))
+        # print('DOWN FEED FAILED. CONNECTION ERROR. url = %s' % (url))
+        ctx['econn'] += 1
+        skip(r, 'ECONN')
         return
     if res.status_code != 200:
         print('DOWN FEED FAILED. url = %s code = %d' % (url, res.status_code))
@@ -108,9 +122,11 @@ def down_feed(url, now, expireDate, force):
     try:
         value = value.encode('utf-8')
     except:
+        print('DOWN FEED FAILED. url = %s not utf-8' % (url))
         skip(r, 'EUTF8')
         return
     if len(value) > MAX_FEED_SIZE:
+        print('DOWN FEED FAILED. url = %s size = %d' % (url, len(value)))
         skip(r, 'EBIG')
         return
     r.value = value

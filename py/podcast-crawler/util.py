@@ -7,6 +7,7 @@ from config import *
 from pymongo import MongoClient
 import pymongo
 import requests
+from pymongo import InsertOne, DeleteOne, ReplaceOne
 
 
 class Document(object):

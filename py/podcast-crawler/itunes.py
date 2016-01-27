@@ -47,7 +47,7 @@ def check_index(comb, force):
 
     def down(country, genre):
         index_key = 'idx_%s_%d' % (country, genre)
-        offset = hash(index_key) % (INDEX_CACHE_EXPIRE_DAYS / 2)
+        offset = hash(index_key) % INDEX_CACHE_EXPIRE_DAYS
         cr = TCache.find_one({'key': index_key})
         if force == FORCE_PARSE and cr and 'value' in cr:
             parse(country, genre, cr['value'])
@@ -81,6 +81,7 @@ def check_index(comb, force):
         pds = bs.select('div[id="selectedcontent"] ul li a')
         pids = set()
         itunes_ids = set()
+        ops = []
         for pd in pds:
             # to guarantee utf-8.
             title = pd.get_text().encode('utf-8')
@@ -101,7 +102,7 @@ def check_index(comb, force):
                                         'country': [country],
                                         'genres': [genre],
                                         'title': title})
-                TPlaylist.insert_one(r.to_json())
+                ops.append(InsertOne(r.to_json()))
             else:
                 r = Document.from_json(r)
                 r.title = title
@@ -109,8 +110,11 @@ def check_index(comb, force):
                     r.country.append(country)
                 if not genre in r.genres:
                     r.genres.append(genre)
-                TPlaylist.replace_one({'pid': pid}, r.to_json())
-
+                ops.append(ReplaceOne({'pid': pid}, r.to_json()))
+        if ops:
+            TPlaylist.bulk_write(ops)
+        else:
+            print('PARSE INDEX FAILED. NO OPS. (%s, %d)' % (country, genre))
     for (country, genre) in comb:
         g = gevent.spawn(down, country, genre)
         pool.add(g)
@@ -132,7 +136,7 @@ def check_lookup(force):
     def down(r):
         pid = r.pid
         lookup_key = 'lkp_%d' % (pid)
-        offset = hash(lookup_key) % (LOOKUP_CACHE_EXPIRE_DAYS / 2)
+        offset = hash(lookup_key) % LOOKUP_CACHE_EXPIRE_DAYS
         cr = TCache.find_one({'key': lookup_key})
         if force == FORCE_PARSE and cr and 'value' in cr:
             parse(r, cr['value'])
@@ -159,7 +163,7 @@ def check_lookup(force):
         cache['updateDate'] = now
         parse(r, value)
         TCache.replace_one({'key': lookup_key}, cache, upsert=True)
-        # time.sleep(1)
+        time.sleep(1)
 
     def parse(r, data):
         pid = r.pid
@@ -262,7 +266,7 @@ def check_trend(comb, force, just_all=False):
         cache['updateDate'] = now
         parse(country, genre, value)
         TCache.replace_one({'key': trend_key}, cache, upsert=True)
-        # time.sleep(1)
+        time.sleep(1)
 
     def parse(country, genre, data):
         print('PARSE TREND (%s, %d)' % (country, genre))
