@@ -1,2 +1,0 @@
-#!/bin/bash
-gunicorn -w 8 -k gevent --worker-connections 1024 -b 127.0.0.1:5030 svr:app

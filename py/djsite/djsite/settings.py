@@ -39,7 +39,6 @@ INSTALLED_APPS = (
     'django_rq',
     'user_profile',
     'ymuser',
-    'bookstore',
 )
 
 MIDDLEWARE_CLASSES = (
