@@ -11,13 +11,11 @@ import random
 import datetime as dt
 import json as json_lib
 import xml.dom.minidom
+import mmh3
 
 from bs4 import BeautifulSoup
 import gevent
 from gevent.pool import Pool
-
-FORCE_ALL = 2
-FORCE_PARSE = 1
 
 
 def make_comb(shuffle=False):
@@ -41,41 +39,18 @@ def check_index(comb, force):
     if USE_HTTPS:
         URL = URL.replace('http://', 'https://')
     now = dt.datetime.now()
-    expireDate = now - dt.timedelta(days=INDEX_CACHE_EXPIRE_DAYS)
 
     print('CHECK INDEX ...')
 
     def down(country, genre):
         index_key = 'idx_%s_%d' % (country, genre)
-        offset = hash(index_key) % INDEX_CACHE_EXPIRE_DAYS
-        cr = TCache.find_one({'key': index_key})
-        if force == FORCE_PARSE and cr and 'value' in cr:
-            parse(country, genre, cr['value'])
-            return
-
-        if not force and cr and cr['updateDate'] > (expireDate + dt.timedelta(days=offset)):
-            # print('DOWN INDEX CACHED. (%s, %d)' % (country, genre))
-            return
-
-        print('DOWN INDEX. (%s, %d)' % (country, genre))
         url = URL % (country, genre)
-        res = requests.get(url)
-        if res.status_code != 200:
-            print('DOWN INDEX FAILED. url = %s code = %d' %
-                  (url, res.status_code))
-            return
-        value = res.content
-        if cr:
-            cache = cr
-        else:
-            cache = {'key': index_key,
-                     'tag': 'index'}
-        cache['value'] = value
-        cache['updateDate'] = now
-        parse(country, genre, value)
-        TCache.replace_one({'key': index_key}, cache, upsert=True)
+        fetch_from_network(
+            url, index_key, 'index', now, INDEX_CACHE_EXPIRE_DAYS,
+            force, parse, country, genre)
+        time.sleep(0.1)
 
-    def parse(country, genre, data):
+    def parse(data, country, genre):
         print('PARSE INDEX (%s, %d)' % (country, genre))
         bs = BeautifulSoup(data)
         pds = bs.select('div[id="selectedcontent"] ul li a')
@@ -103,6 +78,8 @@ def check_index(comb, force):
                                         'genres': [genre],
                                         'title': title})
                 ops.append(InsertOne(r.to_json()))
+            elif 'PATCH' in os.environ:
+                return
             else:
                 r = Document.from_json(r)
                 r.title = title
@@ -116,8 +93,7 @@ def check_index(comb, force):
         else:
             print('PARSE INDEX FAILED. NO OPS. (%s, %d)' % (country, genre))
     for (country, genre) in comb:
-        g = gevent.spawn(down, country, genre)
-        pool.add(g)
+        pool.spawn(down, country, genre)
     pool.join()
     print('CHECK INDEX DONE.')
 
@@ -125,49 +101,27 @@ def check_index(comb, force):
 def check_lookup(force):
     rs = TPlaylist.find(PIDS_QUERY)
     pool = Pool(size=4)
-    now = dt.datetime.now()
-    expireDate = now - dt.timedelta(days=LOOKUP_CACHE_EXPIRE_DAYS)
-
     URL = 'http://itunes.apple.com/lookup?id=%d'
     if USE_HTTPS:
         URL = URL.replace('http://', 'https://')
+    now = dt.datetime.now()
+
     print('CHECK LOOKUP ...')
 
     def down(r):
         pid = r.pid
         lookup_key = 'lkp_%d' % (pid)
-        offset = hash(lookup_key) % LOOKUP_CACHE_EXPIRE_DAYS
-        cr = TCache.find_one({'key': lookup_key})
-        if force == FORCE_PARSE and cr and 'value' in cr:
-            parse(r, cr['value'])
-            return
+        url = URL % pid
+        fetch_from_network(
+            url, lookup_key, 'lookup', now, LOOKUP_CACHE_EXPIRE_DAYS,
+            force, parse, r)
+        time.sleep(0.1)
 
-        if not force and cr and cr['updateDate'] > (expireDate + dt.timedelta(days=offset)):
-            # print('DOWN LOOKUP CACHED. pid = %d' % (pid))
-            return
-
-        print('DOWN LOOKUP. pid = %d' % pid)
-        url = URL % (pid)
-        res = requests.get(url)
-        if res.status_code != 200:
-            print("DOWN LOOKUP FAILED. url = %s code = %d" %
-                  (url, res.status_code))
-            return
-        value = res.content
-        if cr:
-            cache = cr
-        else:
-            cache = {'key': lookup_key,
-                     'tag': 'lookup'}
-        cache['value'] = value
-        cache['updateDate'] = now
-        parse(r, value)
-        TCache.replace_one({'key': lookup_key}, cache, upsert=True)
-        time.sleep(1)
-
-    def parse(r, data):
+    def parse(data, r):
         pid = r.pid
         print('PARSE LOOKUP. pid = %d' % (pid))
+        if 'PATCH' in os.environ and not hasattr(r, 'skip') and hasattr(r, 'feedUrl'):
+            return
         json = json_lib.loads(data)
         if json['resultCount'] != 1:
             if json['resultCount'] != 0:
@@ -205,8 +159,7 @@ def check_lookup(force):
         if 'skip' in r:
             continue
         r = Document.from_json(r)
-        g = gevent.spawn(down, r)
-        pool.add(g)
+        pool.spawn(down, r)
     pool.join()
     print('CHECK LOOKUP DONE.')
 
@@ -232,46 +185,25 @@ def check_trend(comb, force, just_all=False):
         URL = URL.replace('http://', 'https://')
         URL_ALL = URL_ALL.replace('http://', 'https://')
     now = dt.datetime.now()
-    expireDate = now - dt.timedelta(days=TREND_CACHE_EXPIRE_DAYS)
+
     print('CHECK TREND ...')
 
     def down(country, genre):
         trend_key = 'trd_%s_%d' % (country, genre)
-        cr = TCache.find_one({'key': trend_key})
-        if force == FORCE_PARSE and cr and 'value' in cr:
-            parse(country, genre, cr['value'])
-            return
-
-        if not force and cr and cr['updateDate'] > expireDate:
-            # print('DOWN TREND CACHED. (%s, %d)' % (country, genre))
-            return
-
-        print('DOWN TREND. (%s, %d)' % (country, genre))
-        if genre == 0:  # so special.
+        if genre == 0:
             url = URL_ALL % (country)
         else:
             url = URL % (country, genre)
-        res = requests.get(url)
-        if res.status_code != 200:
-            print('DOWN TREND FAILED. url = %s code = %d' % (
-                url, res.status_code))
-            return
-        value = res.content
-        if cr:
-            cache = cr
-        else:
-            cache = {'key': trend_key,
-                     'tag': 'trend'}
-        cache['value'] = value
-        cache['updateDate'] = now
-        parse(country, genre, value)
-        TCache.replace_one({'key': trend_key}, cache, upsert=True)
-        time.sleep(1)
+        fetch_from_network(
+            url, trend_key, 'trend', now, TREND_CACHE_EXPIRE_DAYS,
+            force, parse, country, genre)
+        time.sleep(0.1)
 
-    def parse(country, genre, data):
+    def parse(data, country, genre):
         print('PARSE TREND (%s, %d)' % (country, genre))
         pids = extract_pids(data)
         pids = pids[::-1]
+        ops = []
         for (idx, xpid) in enumerate(pids):
             (pid, title) = xpid
             r = TPlaylist.find_one({'pid': pid})
@@ -282,17 +214,17 @@ def check_trend(comb, force, just_all=False):
                  'country': [country],
                  'genres': [] if genre == 0 else [genre],
                  'title': title}
-            TPlaylist.insert_one(r)
+            ops.append(InsertOne(r))
+        if ops:
+            TPlaylist.bulk_write(ops)
 
     if not just_all:
         for (country, genre) in comb:
-            g = gevent.spawn(down, country, genre)
-            pool.add(g)
+            pool.spawn(down, country, genre)
     for country in ITUNES_COUNTRY_CODE.values():
         if country.find('_') != -1:
             continue
-        g = gevent.spawn(down, country, 0)
-        pool.add(g)
+        pool.spawn(down, country, 0)
     pool.join()
     print('CHECK TREND DONE.')
 
@@ -369,21 +301,17 @@ def top_titles(comb):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    args = ['--index', '--lookup',
-            '--force', '--force-only-parse']
+    args = ['--index', '--trend', '--lookup', '--force']
     for arg in args:
         parser.add_argument(arg, action='store_true')
 
     args = parser.parse_args()
     comb = make_comb()
-    force = 0
-    if args.force:
-        force = FORCE_ALL
-    if args.force_only_parse:
-        force = FORCE_PARSE
+    force = args.force
 
     if args.index:
         check_index(comb, force)
+    if args.trend:
         check_trend(comb, force, just_all=False)
     if args.lookup:
         check_lookup(force)

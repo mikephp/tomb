@@ -4,6 +4,7 @@
 
 from util import *
 
+import os
 import datetime as dt
 import traceback
 
@@ -11,9 +12,9 @@ import feedparser
 import xml.dom.minidom
 import gevent
 from gevent.pool import Pool
+import dateutil.parser
 
-FORCE_ALL = 2
-FORCE_PARSE = 1
+import mmh3
 
 
 def check_feed(force):
@@ -34,8 +35,7 @@ def check_feed(force):
             continue
         url = r['feedUrl']
         ctx['total'] += 1
-        g = gevent.spawn(down_feed, ctx, url, now, expireDate, force)
-        pool.add(g)
+        pool.spawn(down_feed, ctx, url, now, expireDate, force)
     pool.join()
     print('CHECK FEED ctx = {}'.format(ctx))
     print('CHECK FEED DONE.')
@@ -56,13 +56,13 @@ def down_feed(ctx, url, now, expireDate, force):
         ctx['skip'] += 1
         return
 
-    if force == FORCE_PARSE and cr and 'value' in cr:
+    if 'FORCE_PARSE' in os.environ and cr and 'value' in cr:
         parse_feed(url, cr['value'], now)
         return
 
     # 如果cache没有过期的话也忽略
     if not force and cr and 'updateDate' in cr and cr['updateDate'] > expireDate:
-        # print('DOWN FEED CACHED. url = %s' % (url))
+        # print('DOWN FEED CACHED. ON DATE url = %s' % (url))
         ctx['cache'] += 1
         return
 
@@ -78,67 +78,62 @@ def down_feed(ctx, url, now, expireDate, force):
     headers = getattr(r, 'headers', {})
     r.headers = headers
     try:
-        res = requests.head(url, timeout=10, headers=headers)
+        res = requests.get(url, timeout=10, headers=headers)
     except:
         # print('DOWN FEED FAILED. CONNECTION ERROR. url = %s' % (url))
         ctx['econn'] += 1
         skip(r, 'ECONN')
         return
-    # HTTP Not Modified or Content-Length is same.
+
+    # HTTP Not Modified
     # TODO: 301. redirect.
-    if res.status_code == 304 or \
-            headers.get('Content-Length', '') == r.headers.get('Content-Length', 'X'):
-        print('DOWN FEED OK. NOT MODIFIED. url = %s' % (url))
+    if res.status_code == 304:
+        print('DOWN FEED CACHED. NOT MODIFIED. url = %s' % (url))
         r.updateDate = now
         TCache.replace_one({'key': r.key}, r.to_json(), upsert=True)
         return
+
+    # FAILED TO FETCH.
     if res.status_code != 200:
         print('DOWN FEED FAILED. url = %s code = %d' % (url, res.status_code))
         code = res.status_code
         skip(r, 'E%d' % (code))
         return
-    if int(r.headers.get('Content-Length', 0)) > MAX_FEED_SIZE:
+
+    # CHECK FEED SIZE.
+    if int(res.headers.get('Content-Length', 0)) > MAX_FEED_SIZE:
         print('DOWN FEED FAILED. url = %s size = %d' %
-              (url, int(r.headers.get('Content-Length', 0))))
+              (url, int(res.headers.get('Content-Length', 0))))
         skip(r, 'EBIG')
         return
 
-    # otherwise we can download it.
-    try:
-        res = requests.get(url, timeout=10)
-    except:
-        # print('DOWN FEED FAILED. CONNECTION ERROR. url = %s' % (url))
-        ctx['econn'] += 1
-        skip(r, 'ECONN')
-        return
-    if res.status_code != 200:
-        print('DOWN FEED FAILED. url = %s code = %d' % (url, res.status_code))
-        code = res.status_code
-        skip(r, 'E%d' % (code))
-        return
     value = res.content
-
     # unicode decode error.
     try:
-        value = value.encode('utf-8')
+        value = value.decode('utf-8').encode('utf-8')
     except:
         print('DOWN FEED FAILED. url = %s not utf-8' % (url))
         skip(r, 'EUTF8')
         return
-    if len(value) > MAX_FEED_SIZE:
-        print('DOWN FEED FAILED. url = %s size = %d' % (url, len(value)))
-        skip(r, 'EBIG')
+    sign = mmh3.hash(value)
+    if getattr(r, 'sign', 0) == sign:
+        print('DOWN FEED CACHE. ON MMH3 SIGN. url = %s' % (url))
+        r.updateDate = now
+        TCache.replace_one({'key': r.key}, r.to_json(), upsert=True)
         return
+
+    r.sign = sign
     r.value = value
     r.updateDate = now
-    r.releaseDate = now
     if 'Last-Modified' in res.headers:
         r.headers['If-Modified-Since'] = res.headers['Last-Modified']
     if 'ETag' in res.headers:
         r.headers['If-None-Match'] = res.headers['ETag']
     if 'Content-Length' in res.headers:
         r.headers['Content-Length'] = res.headers['Content-Length']
-    parse_feed(url, value, now)
+    if not parse_feed(url, value, now):
+        skip(r, 'EPARSE')
+        return
     TCache.replace_one({'key': r.key}, r.to_json(), upsert=True)
 
 
@@ -150,7 +145,8 @@ def extract_detail(r, data):
     description = feed.get('summary', '') or feed.get('description', '')
     r.description = description.encode('utf-8')
     r.author = feed.get('author', '').encode('utf-8')
-    r.releaseDate = dom.entries[0].published
+    r.releaseDate = feed.get('published', '') or dom.entries[
+        0].get('published', '') if dom.entries else ''
     r.trackCount = len(dom.entries)
     r.cover = feed.image.href if 'image' in feed and 'href' in feed.image else ""
     r.parsed = 1
@@ -163,6 +159,9 @@ def parse_feed(url, value, now):
     if not r:
         r = {'key': feed_key,
              'feedUrl': url}
+    elif 'PATCH' in os.environ:
+        return
+
     r = Document.from_json(r)
     try:
         extract_detail(r, value)
@@ -170,8 +169,9 @@ def parse_feed(url, value, now):
     except Exception as e:
         print('PARSE FEED FAILED. url = %s' % (url))
         # traceback.print_exc()
-        return
+        return False
     TPodcast.replace_one({'key': feed_key}, r.to_json(), upsert=True)
+    return True
 
 
 def back_fill_itunes(force):
@@ -208,32 +208,29 @@ def back_fill_itunes(force):
         r2.author = getattr(r2, 'author', '') or getattr(r, 'authorName', '')
         r2.trackCount = getattr(
             r2, 'trackCount', 0) or getattr(r, 'trackCount', 0)
+        r2.description = getattr(r2, 'description', '')
+        r2.parsedDate = getattr(r2, 'parsedDate', '') or dateutil.parser.parse(
+            getattr(r, 'releaseDate', ''))
         r2.releaseDate = getattr(
             r2, 'releaseDate', '') or getattr(r, 'releaseDate', '')
+        r2.parsed = 1
         TPodcast.replace_one({'key': feed_key}, r2.to_json(), upsert=True)
     for r in rs:
         if 'feedUrl' not in r:
             continue
         r = Document.from_json(r)
-        g = gevent.spawn(f, r)
-        pool.add(g)
+        pool.spawn(f, r)
     pool.join()
     print('BACK FILL ITUNES DONE')
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    args = ['--feed', '--force', '--force-only-parse',
-            '--back-fill']
+    args = ['--feed', '--force', '--back-fill']
     for arg in args:
         parser.add_argument(arg, action='store_true')
     args = parser.parse_args()
-
-    force = 0
-    if args.force:
-        force = FORCE_ALL
-    if args.force_only_parse:
-        force = FORCE_PARSE
+    force = args.force
 
     if args.feed:
         check_feed(force)

@@ -59,16 +59,18 @@ MAX_RETRY_NUMBER = 5
 MONGO_URL = 'mongodb://localhost:27017'
 REDIS_URL = ('localhost', 6379, 0)
 USE_HTTPS = True
+ES_URL = 'http://localhost:9200/'
 
 # itunes settings
 INDEX_CACHE_EXPIRE_DAYS = 14
 LOOKUP_CACHE_EXPIRE_DAYS = 90
 TREND_CACHE_EXPIRE_DAYS = 14
 PIDS_QUERY = {}
+INDEX_PIDS_QUERY = {}
 
 # podcast settings
 FEED_CACHE_EXPIRE_DAYS = 14
-MAX_FEED_SIZE = 1 << 21
+MAX_FEED_SIZE = 1 << 23  # 8MB
 
 WEB_DEBUG = False
 
