@@ -6,7 +6,7 @@ from . import views
 urlpatterns = patterns(
     '',
     # Examples:
-    # url(r'^$', 'djsite.views.home', name='home'),
+    # url(r'^$', 'django_site.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
 
     # url(r'^$', views.home),

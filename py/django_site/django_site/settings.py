@@ -1,5 +1,5 @@
 """
-Django settings for djsite project.
+Django settings for django_site project.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/1.7/topics/settings/
@@ -70,9 +70,9 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
-ROOT_URLCONF = 'djsite.urls'
+ROOT_URLCONF = 'django_site.urls'
 
-WSGI_APPLICATION = 'djsite.wsgi.application'
+WSGI_APPLICATION = 'django_site.wsgi.application'
 
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'templates'),
