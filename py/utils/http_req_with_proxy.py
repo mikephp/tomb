@@ -18,7 +18,8 @@ remote_proxy = ('http', '127.0.0.1:9000')
 # does not work.
 # local_proxy = ('socks5', '127.0.0.1:62221')
 
-req_url = 'http://www.baidu.com'
+# req_url = 'http://www.baidu.com'
+req_url = 'http://itunes.apple.com/lookup?id=917918570'
 
 
 def req_with_proxy_0(url, proxy):
