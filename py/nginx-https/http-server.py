@@ -16,10 +16,12 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
-
+import sys
 def run(server_class=BaseHTTPServer.HTTPServer,
         handler_class=BaseHTTPServer.BaseHTTPRequestHandler):
-    server_address = ('', 8000)
+    if len(sys.argv) > 1:
+        port = int(sys.argv[1])
+    server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     httpd.serve_forever()
 
