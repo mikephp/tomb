@@ -1,2 +1,4 @@
-https://werobot.readthedocs.org/en/latest/ 我的公众号机器人是dirtysalt-robot. 也可以通过搜索dirtysalt找到.
+- werobot文档 https://werobot.readthedocs.org/en/latest/
+- 微信公众号平台 https://mp.weixin.qq.com/cgi-bin/home?t=home/index&lang=zh_CN&token=417195633
+- 我的公众号机器人是dirtysalt-robot. 也可以通过搜索dirtysalt找到.
 - 2016.4: werobot还没有支持加密传输. 所以只能用明文来做了. https://github.com/whtsky/WeRoBot/issues/81
