@@ -12,17 +12,15 @@ case_num = int(fh.readline())
 以此类推，如果C=K的话，那么所有可能的G都会出现在一点上.
 """
 
-def f(K, C, S):
-    group = (K - C + 1)
-    if S < group:
+def f(k, c, s):
+    if c * s < k:
         return 'IMPOSSIBLE'
     res = []
-    x = 0
-    for i in range(1, min(C, K)):
-        x = x * K + i
-    res.append(x + 1)
-    for i in range(C, K):
-        res.append(i + 1)
+    for i in range(0, k, c):
+        x = 0
+        for j in range(i, min(i + c, k)):
+            x = x * k + j
+        res.append(x + 1)
     return ' '.join(map(lambda x: str(x), res))
 
 for c in range(case_num):
