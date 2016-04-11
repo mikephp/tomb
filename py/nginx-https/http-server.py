@@ -19,6 +19,7 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
 import sys
 def run(server_class=BaseHTTPServer.HTTPServer,
         handler_class=BaseHTTPServer.BaseHTTPRequestHandler):
+    port = 18888
     if len(sys.argv) > 1:
         port = int(sys.argv[1])
     server_address = ('', port)
