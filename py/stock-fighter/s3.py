@@ -2,9 +2,9 @@
 # coding:utf-8
 # Copyright (C) dirlt
 
-import gevent
 from gevent import monkey
 monkey.patch_all()
+import gevent
 from gevent.pool import Pool
 
 from stockfighter import Stockfighter
