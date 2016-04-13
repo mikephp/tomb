@@ -30,7 +30,7 @@ def play():
             filled = sum(map(lambda x: x['qty'], st['fills']))
             if filled == size:
                 break
-            time.sleep(2)
+            time.sleep(0.5)
 
 if __name__ == '__main__':
     play()
