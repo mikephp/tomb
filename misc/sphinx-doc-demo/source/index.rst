@@ -19,7 +19,7 @@ Contents:
 `Contents` 部分是用来显示文档提纲的。maxdepth参数可以控制每个子文件显示到第几层的标题。
 
 Sphinx-Doc入门
-==============
+====================
 
 - 官方文档 http://www.sphinx-doc.org/en/stable/contents.html
 - reST(reStructuredText)入门 http://www.sphinx-doc.org/en/stable/rest.html
@@ -44,7 +44,7 @@ reStructuredText语法
 
 
 引用外部链接
------------
+-------------
 
 稍微有点麻烦。Target分为Named和Annonymous两种，还有一种是直接粘贴链接。
 直接粘贴链接非常方便，但是如果链接太长显示效果就太差了，这个时候还是要使用Named Target. 比如
@@ -56,7 +56,7 @@ https://www.google.com/#newwindow=1&safe=strict&q=convert+png+to+jpg+imagemagick
 
 
 引用内部图片
------------
+--------------
 .. image:: _static/hello.jpg
 
 还有一种有意思的使用是将内部文字替换为图片.
@@ -67,7 +67,7 @@ The |biohazard| symbol must be used on containers used to dispose of medical was
 
 
 引用代码片段
------------
+--------------
 这里代码片段不仅限于代码片段，更加准确地说是literal blocks(字面块)::
 
   print 'hello'
