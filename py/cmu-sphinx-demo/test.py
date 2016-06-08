@@ -51,7 +51,7 @@ class SphinxDecoder(object):
         decoder.end_utt()
         if utt_started:
             if decoder.hyp():
-                for seg in decoder.seg():
+               for seg in decoder.seg():
                     yield (seg.word, seg.prob, seg.start_frame / frate, seg.end_frame / frate)
 
     def locate_in_file(self, keyphrase, wav_file, buffer_size = 4096 * 4):
