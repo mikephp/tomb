@@ -50,3 +50,4 @@ Pods
 *.mp4
 *.gif
 .DS_Store
+.ipynb_checkpoints
