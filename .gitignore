@@ -26,17 +26,13 @@ GRTAGS
 GSYMS
 GTAGS
 *.db
-py/sim-svr/static
-kaggle/*/submission.csv
-kaggle/digit-recognizer/*.csv
 *.caffemodel
 *.solverstate
 *.hdf5
 # *.jpg
 # *.png
 *.zip
-kaggle/facial-keypoints-detection/*.csv
-kaggle/*/cookies.txt
+cookies.txt
 *.npy
 *.tgz
 *.deb
@@ -51,3 +47,5 @@ Pods
 *.gif
 .DS_Store
 .ipynb_checkpoints
+*.tsv
+*.csv
