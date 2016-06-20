@@ -2,11 +2,11 @@
 #coding:utf-8
 #Copyright (C) dirlt
 
+# https://www.kaggle.com/c/bike-sharing-demand
+
 import numpy as np
 import datetime
 import pylab as pl
-
-# http://www.kaggle.com/c/bike-sharing-demand
 
 def read_in(s, test = False):
     ss = s.split(',')
@@ -177,12 +177,12 @@ def select():
     print('loading training set ...')
     tr = read_train()
     print('training ...')
-    # reg_rf = select_rf(tr)
-    # reg = reg_rf
+    reg_rf = select_rf(tr)
+    reg = reg_rf
     reg_gbdt = select_gbdt(tr)
     reg = reg_gbdt
     reg = Combiner([reg_rf, reg_gbdt])
-    cv = 1
+    cv = 0
     if cv:
         scores = cross_val(reg, tr)
         print scores
@@ -192,7 +192,6 @@ def select():
 def run(reg, tr):
     if not reg: return
     (xs, ys) = tr
-    print('training ...')
     reg.fit(xs, ys)
     print('loading test set ...')
     (xs, dts) = read_test()
