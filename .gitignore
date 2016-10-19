@@ -49,3 +49,4 @@ Pods
 .ipynb_checkpoints
 *.tsv
 *.csv
+*.xlsx
