@@ -114,7 +114,6 @@
 # TODO(yan): case is N >= 5000
 
 
-
 if __name__ == '__main__':
     s = Solution()
     print s.isMatch("aa", "*")
