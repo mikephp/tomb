@@ -111,13 +111,81 @@
 
 #         return bool(st[swt][len(s)-1])
 
-# TODO(yan): case is N >= 5000
+# NOTE(yan): case is N >= 5000
+
+class Solution(object):
+    def isMatch(self, s, p):
+        """
+        :type s: str
+        :type p: str
+        :rtype: bool
+        """
+
+        s = '#' + s
+
+        # 把正则表达式按照*分割成为多块
+        # 这样如果里面有长字符串的话
+        # 可以直接进行匹配，而不用按照字符逐个去尝试
+
+        ps = ['#']
+        sub = ''
+        for c in p:
+            if c == '*':
+                if sub:
+                    ps.append(sub)
+                    sub = ''
+                ps.append('*')
+            else:
+                sub = sub + c
+        if sub:
+            ps.append(sub)
+        # print ps, s
+
+        st = []
+        for i in range(2):
+            st.append([0] * len(s))
+        self.st = st
+        st[0][0] = 1
+        swt = 0
+
+        for j in xrange(1, len(ps)):
+            aft = 1 - swt
+            if ps[j] == '*':
+                v = 0
+                for i in xrange(0, len(s)):
+                    v |= st[swt][i]
+                    st[aft][i] = v
+            else:
+                for i in range(0, len(s)):
+                    st[aft][i] = 0
+                ps_size = len(ps[j])
+                for i in range(1, len(s) + 1 - ps_size):
+                    end = i + ps_size - 1
+                    if self.string_match(s[i: i + ps_size], ps[j]):
+                        st[aft][end] = st[swt][i-1]
+                    else:
+                        st[aft][end] = 0
+            swt = aft
+            # print st
+
+        return bool(st[swt][len(s)-1])
+
+    def string_match(self, a, b):
+        # print('a = {}, b = {}'.format(a, b))
+        for (i, x) in enumerate(a):
+            y = b[i]
+            if y != '?' and x != y:
+                return False
+        return True
 
 
 if __name__ == '__main__':
     s = Solution()
+    print s.isMatch("abc", "abc*defghijk")
+    print s.isMatch("aa", "aa")
     print s.isMatch("aa", "*")
     print s.isMatch("aab", "c*a*b")
     print s.isMatch("ab", "?*")
     print s.isMatch("", "?")
     print s.isMatch("b","*?*?")
+    print s.isMatch('a' * 5000, '*' + 'a' * 4999 + '*')
