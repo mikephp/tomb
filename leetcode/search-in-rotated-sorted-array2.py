@@ -52,7 +52,7 @@ class Solution(object):
     #     else:
     #         return s
 
-    # TOOD(yan): FIX ME.
+    # TOOD(yan): FIX ME. not O(lgN)
     def locate_pivot(self, nums):
         p = 1
         while p < len(nums):
