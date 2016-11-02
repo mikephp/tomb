@@ -1,0 +1,15 @@
+#+options: -*- org -*-
+
+如何获取problems.txt
+
+这个过程是半自动的。首先你需要登录oj.leetcode.com, 将每一页的html输出粘贴到/tmp/note这个文件里面，之后运行下面函数就可以得到这页所有的题目。
+
+#+BEGIN_SRC Python
+def get_problems():
+     from bs4 import BeautifulSoup
+     bs = BeautifulSoup(open('/tmp/note').read())
+     xs = bs.select('#question-app > div > div > div > table > tbody.reactable-data > tr > td > div > a')
+     xs2 = map(lambda x: x.attrs['href'][len('/problems/'):], xs)
+     return xs2
+#+END_SRC
+
