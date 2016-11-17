@@ -9,7 +9,7 @@ class Solution(object):
         :rtype: int
         """
 
-        # TODO(yan): FIXME. not in O(n)
+        # TODO(yan): FIXME. not O(n)
         nums.sort()
         if not nums: return 0
         pp = nums[0]
