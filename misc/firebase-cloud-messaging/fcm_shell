@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# Copyright (C) dirlt
-
-curl -H "Authorization: key=AIzaSyCmvJyTvkpR4m0_PhN8ZZifT6BSeBXpqIo" --header Content-Type:"application/json" https://fcm.googleapis.com/fcm/send -d "{\"to\":\"duuquvxS_Zg:APA91bEYzxx9sXESeWVAUpg1_-lkgeakB288OBYYcS-AAwPJBCgTrs2hEElvRn0-pu7jmye3waKp-EOU3JcxY58W7Txt66F5fpeT1womkUA3Vve-GkT-f8xett4Hdl14qJ8Y6dYvpLM6\", \"notification\":{\"body\":\"hello\"}, \"priority\": \"high\"}"
-
