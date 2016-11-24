@@ -1,3 +1,2 @@
-cache/
-output/
-*.txt
+cache-*/
+output-*/

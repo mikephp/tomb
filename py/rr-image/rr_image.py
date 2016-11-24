@@ -9,16 +9,23 @@ import json
 import string
 import threading
 import re
+import pymongo
 
 import requests
 from bs4 import BeautifulSoup
 import hashlib
 
-CACHE_DIR = 'cache/'
+STATION_ID = 600261907
+
+mongo_client = pymongo.MongoClient()
+mongo_db = mongo_client.rr_image
+cache_table = mongo_db['cache_%d' % STATION_ID]
+
+CACHE_DIR = 'cache-%d/' % (STATION_ID)
 if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
 
-OUTPUT_DIR = 'output/'
+OUTPUT_DIR = 'output-%d/' % (STATION_ID)
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
 
@@ -26,25 +33,22 @@ def get_url(url, ss = None):
     if not ss:
         ss = requests.session()
     key = hashlib.md5(url).hexdigest()
-    cache = CACHE_DIR + key
-    if os.path.exists(cache):
-        data = open(cache).read()
-        return data
+    r = cache_table.find_one({'_id': key})
+    if r: return r['data']
+    print('get url %s' % url)
     r = ss.get(url)
-    with open(cache, 'w') as fh:
-        fh.write(r.content)
-    return r.content
+    data = r.content
+    cache_table.insert({'_id': key, 'data': data})
+    return data
 
-
-def get_album_urls(station_id = 600261907):
+def get_album_urls():
     cache = CACHE_DIR + 'album.urls.txt'
     if not os.path.exists(cache):
         ss = requests.session()
         urls = []
-        init_url = 'http://page.renren.com/%d/album' % station_id
+        init_url = 'http://page.renren.com/%d/album' % STATION_ID
 
         def f(url, init = False):
-            print('get url %s' % url)
             data = get_url(url, ss)
             bs = BeautifulSoup(data)
             xs = bs.select('#tabBody > div > div > div > table > tbody > tr > td > div > a')
@@ -70,7 +74,7 @@ def get_album_urls(station_id = 600261907):
 
 def get_image_urls(album_url):
     album_id = album_url.split('/')[-1]
-    cache = CACHE_DIR + 'image.urls.%s.txt' % album_id
+    cache = CACHE_DIR + 'album.urls.%s.txt' % album_id
     if os.path.exists(cache):
         with open(cache) as fh:
             return [x.strip() for x in fh]
@@ -80,7 +84,6 @@ def get_image_urls(album_url):
     images = []
     while True:
         url = album_url + '?curpage=%d' % curpage
-        print('get url %s' % url)
         data = get_url(url, ss)
         bs = BeautifulSoup(data)
         xs = bs.select('#single-column > table > tbody > tr > td > a')
@@ -102,7 +105,6 @@ def get_data_urls(image_urls):
     urls = []
     ss = requests.session()
     for x in image_urls:
-        print('get url %s' % x)
         data = get_url(x, ss)
         m = re.search(DOWNLOAD_URL_RE, data)
         if not m: continue
@@ -115,7 +117,7 @@ def download_pics(data_urls):
         file_name = x.split('/')[-1]
         file_path = os.path.join(OUTPUT_DIR, file_name)
         if os.path.exists(file_path): continue
-        r = ss.get(url)
+        r = ss.get(x)
         print('download pic %s' % x)
         with open(file_path, 'wb') as fh:
             fh.write(r.text)
@@ -127,11 +129,11 @@ if __name__ == '__main__':
     for url in urls:
         images = get_image_urls(url)
         imgs.extend(images)
-    with open('rr_image.urls.txt', 'w') as fh:
+    with open(CACHE_DIR + 'rr_image.urls.txt', 'w') as fh:
         fh.writelines(map(lambda x: x + '\n', imgs))
 
     urls = get_data_urls(imgs)
-    with open('rr_data.urls.txt', 'w') as fh:
+    with open(CACHE_DIR + 'rr_data.urls.txt', 'w') as fh:
         fh.writelines(map(lambda x: x + '\n', urls))
 
     download_pics(urls)
