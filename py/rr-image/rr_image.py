@@ -2,13 +2,17 @@
 #coding:utf-8
 #Copyright (C) dirlt
 
-import urllib2
+import gevent
+import gevent.monkey
+gevent.monkey.patch_all()
+print('gevent.monkey patched')
+
+from gevent.pool import Pool as ThreadPool
+
 import re
 import os
 import json
 import string
-import threading
-import re
 import pymongo
 
 import requests
@@ -101,39 +105,32 @@ def get_image_urls(album_url):
 
 DOWNLOAD_URL_RE = re.compile(r'"large":"([^"]+)"')
 
-def get_data_urls(image_urls):
-    urls = []
-    ss = requests.session()
-    for x in image_urls:
-        data = get_url(x, ss)
+def download_images(image_urls):
+    def f(url):
+        ss = requests.session()
+        data = get_url(url, ss)
         m = re.search(DOWNLOAD_URL_RE, data)
-        if not m: continue
-        urls.append(m.groups()[0])
-    return urls
+        if not m: return
+        data_url = m.groups()[0].replace('\\', '')
 
-def download_pics(data_urls):
-    ss = requests.session()
-    for x in data_urls:
-        file_name = x.split('/')[-1]
-        file_path = os.path.join(OUTPUT_DIR, file_name)
-        if os.path.exists(file_path): continue
-        r = ss.get(x)
-        print('download pic %s' % x)
+        file_name = url.split('/')[-1]
+        file_path = os.path.join(OUTPUT_DIR, file_name + '.jpg')
+        if os.path.exists(file_path):
+            # print('cached...')
+            return
+        r = ss.get(data_url)
+        print('download image %s' % data_url)
         with open(file_path, 'wb') as fh:
-            fh.write(r.text)
+            fh.write(r.content)
+
+    tp = ThreadPool(4)
+    for url in image_urls:
+        tp.spawn(f, url)
+    tp.join()
 
 if __name__ == '__main__':
-    urls = get_album_urls()
-
-    imgs = []
-    for url in urls:
-        images = get_image_urls(url)
-        imgs.extend(images)
-    with open(CACHE_DIR + 'rr_image.urls.txt', 'w') as fh:
-        fh.writelines(map(lambda x: x + '\n', imgs))
-
-    urls = get_data_urls(imgs)
-    with open(CACHE_DIR + 'rr_data.urls.txt', 'w') as fh:
-        fh.writelines(map(lambda x: x + '\n', urls))
-
-    download_pics(urls)
+    album_urls = get_album_urls()
+    image_urls = []
+    for album_url in album_urls:
+        image_urls.extend(get_image_urls(album_url))
+    download_images(image_urls)
