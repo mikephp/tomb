@@ -8,7 +8,7 @@ import os
 import json
 import string
 import threading
-
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -17,6 +17,10 @@ import hashlib
 CACHE_DIR = 'cache/'
 if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
+
+OUTPUT_DIR = 'output/'
+if not os.path.exists(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR)
 
 def get_url(url, ss = None):
     if not ss:
@@ -64,7 +68,6 @@ def get_album_urls(station_id = 600261907):
     with open(cache) as fh:
         return [x.strip() for x in fh]
 
-
 def get_image_urls(album_url):
     album_id = album_url.split('/')[-1]
     cache = CACHE_DIR + 'image.urls.%s.txt' % album_id
@@ -93,11 +96,42 @@ def get_image_urls(album_url):
         fh.writelines(map(lambda x: x + '\n', images))
     return images
 
+DOWNLOAD_URL_RE = re.compile(r'"large":"([^"]+)"')
+
+def get_data_urls(image_urls):
+    urls = []
+    ss = requests.session()
+    for x in image_urls:
+        print('get url %s' % x)
+        data = get_url(x, ss)
+        m = re.search(DOWNLOAD_URL_RE, data)
+        if not m: continue
+        urls.append(m.groups()[0])
+    return urls
+
+def download_pics(data_urls):
+    ss = requests.session()
+    for x in data_urls:
+        file_name = x.split('/')[-1]
+        file_path = os.path.join(OUTPUT_DIR, file_name)
+        if os.path.exists(file_path): continue
+        r = ss.get(url)
+        print('download pic %s' % x)
+        with open(file_path, 'wb') as fh:
+            fh.write(r.text)
+
 if __name__ == '__main__':
     urls = get_album_urls()
+
     imgs = []
     for url in urls:
         images = get_image_urls(url)
         imgs.extend(images)
     with open('rr_image.urls.txt', 'w') as fh:
         fh.writelines(map(lambda x: x + '\n', imgs))
+
+    urls = get_data_urls(imgs)
+    with open('rr_data.urls.txt', 'w') as fh:
+        fh.writelines(map(lambda x: x + '\n', urls))
+
+    download_pics(urls)
