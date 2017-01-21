@@ -27,6 +27,7 @@ from shadowsocks.crypto import rc4_md5, openssl, sodium, table
 
 
 method_supported = {}
+# note(yan): 每个模块下面有许多ciphers实现, 这里可以分析table或者是openssl
 method_supported.update(rc4_md5.ciphers)
 method_supported.update(openssl.ciphers)
 method_supported.update(sodium.ciphers)
@@ -43,6 +44,8 @@ cached_keys = {}
 def try_cipher(key, method=None):
     Encryptor(key, method)
 
+# note(yan): `The EVP functions provide a high level interface to OpenSSL cryptographic functions.`
+# key_len and iv_len ?
 
 def EVP_BytesToKey(password, key_len, iv_len):
     # equivalent to OpenSSL's EVP_BytesToKey() with count 1
@@ -61,6 +64,7 @@ def EVP_BytesToKey(password, key_len, iv_len):
         md5.update(data)
         m.append(md5.digest())
         i += 1
+    # note(yan): 用非常奇怪的方式，使用password来生成key和iv.
     ms = b''.join(m)
     key = ms[:key_len]
     iv = ms[key_len:key_len + iv_len]
@@ -106,17 +110,21 @@ class Encryptor(object):
         if op == 1:
             # this iv is for cipher not decipher
             self.cipher_iv = iv[:m[1]]
+        # note(yan): 得到cipher实例，之后就可以调用update来加密数据
         return m[2](method, key, iv, op)
 
+    # note(yan): encrypt可以增量更新数据. cipher_iv + data + data.
     def encrypt(self, buf):
         if len(buf) == 0:
             return buf
         if self.iv_sent:
             return self.cipher.update(buf)
         else:
+            # note(yan): 初次发送的时候会带上cipher_iv
             self.iv_sent = True
             return self.cipher_iv + self.cipher.update(buf)
 
+    # note(yan): decrypt看上去是需要一次把buf全部获取到然后才能解密
     def decrypt(self, buf):
         if len(buf) == 0:
             return buf

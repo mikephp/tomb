@@ -37,9 +37,13 @@ class LRUCache(collections.MutableMapping):
     def __init__(self, timeout=60, close_callback=None, *args, **kwargs):
         self.timeout = timeout
         self.close_callback = close_callback
+        # key -> value
         self._store = {}
+        # t -> keys. 某个时刻t访问的keys
         self._time_to_keys = collections.defaultdict(list)
+        # key -> t 某个key最后一次访问时间
         self._keys_to_last_time = {}
+        # 最近访问的times
         self._last_visits = collections.deque()
         self._closed_values = set()
         self.update(dict(*args, **kwargs))  # use the free update to set keys
@@ -71,6 +75,8 @@ class LRUCache(collections.MutableMapping):
     def __len__(self):
         return len(self._store)
 
+    # note(yan): 清除过期内容keys，并且对这些values调用close_callback.
+    # 过期内容以timeout来判断
     def sweep(self):
         # O(m)
         now = time.time()

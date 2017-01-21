@@ -138,7 +138,8 @@ def pack_addr(address):
         address = address[:255]  # TODO
     return b'\x03' + chr(len(address)) + address
 
-
+# note(yan): data的头部有地址信息，地址可能是ip4, ip6, host, 之后加上port.
+# 这个应该是要遵循socks5协议规范。对ip6格式不太熟悉，ip4是32bits整数, host则是字符串。
 def parse_header(data):
     addrtype = ord(data[0])
     dest_addr = None
@@ -177,7 +178,7 @@ def parse_header(data):
         return None
     return addrtype, to_bytes(dest_addr), dest_port, header_length
 
-
+# note(yan): 可以设置添加多个network(支持网段), 然后能判断某个addr是否在这个网段内。
 class IPNetwork(object):
     ADDRLENGTH = {socket.AF_INET: 32, socket.AF_INET6: 128, False: 0}
 
