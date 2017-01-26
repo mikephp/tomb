@@ -43,6 +43,7 @@ class Manager(object):
 
         self._statistics = collections.defaultdict(int)
         self._control_client_addr = None
+        # note(yan): manager socket?
         try:
             manager_address = config['manager_address']
             if ':' in manager_address:
@@ -69,6 +70,7 @@ class Manager(object):
                        eventloop.POLL_IN, self)
         self._loop.add_periodic(self.handle_periodic)
 
+        # note(yan): 每个port都有不同的密码，可以在多个port之间切换.
         port_password = config['port_password']
         del config['port_password']
         for port, password in port_password.items():
@@ -106,6 +108,8 @@ class Manager(object):
             logging.error("server not exist at %s:%d" % (config['server'],
                                                          port))
 
+    # note(yan): control socket events.
+    # 这样远端能控制增删端口，而不用重启服务。
     def handle_event(self, sock, fd, event):
         if sock == self._control_socket and event == eventloop.POLL_IN:
             data, self._control_client_addr = sock.recvfrom(BUF_SIZE)

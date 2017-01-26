@@ -15,6 +15,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+# note(yan): see http://www.freesoft.org/CIE/Topics/77.htm
+# http://www.freesoft.org/CIE/RFC/1035/39.htm
+
 from __future__ import absolute_import, division, print_function, \
     with_statement
 
@@ -29,6 +32,7 @@ from shadowsocks import common, lru_cache, eventloop, shell
 
 CACHE_SWEEP_INTERVAL = 30
 
+# note(yan): 不能以-开头和结尾，但是允许中间出现-.
 VALID_HOSTNAME = re.compile(br"(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
 
 common.patch_socket()
@@ -88,7 +92,9 @@ def build_address(address):
 
 def build_request(address, qtype):
     request_id = os.urandom(2)
+    # note(yan): QD, AN, NS AR COUNT = (1, 0, 0, 0)
     header = struct.pack('!BBHHHH', 1, 0, 1, 0, 0, 0)
+    # note(yan): 这个地址看上去就应该是name server.
     addr = build_address(address)
     qtype_qclass = struct.pack('!HH', qtype, QCLASS_IN)
     return request_id + header + addr + qtype_qclass
@@ -103,7 +109,6 @@ def parse_ip(addrtype, data, length, offset):
         return parse_name(data, offset)[1]
     else:
         return data[offset:offset + length]
-
 
 def parse_name(data, offset):
     p = offset
@@ -150,6 +155,7 @@ def parse_name(data, offset):
 #    +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 def parse_record(data, offset, question=False):
     nlen, name = parse_name(data, offset)
+    # note(yan): 询问和应答记录是同样的结构？如果是应答的话，那么rdata部分就是IP
     if not question:
         record_type, record_class, record_ttl, record_rdlength = struct.unpack(
             '!HHiH', data[offset + nlen:offset + nlen + 10]
@@ -212,6 +218,8 @@ def parse_response(data):
                 l, r = parse_record(data, offset)
                 offset += l
             response = DNSResponse()
+            # note(yan): 消息里面会带上question的hostname
+            # 因为整个协议是跑在UDP上的，所以结果里面必须带上问题。
             if qds:
                 response.hostname = qds[0][0]
             for an in qds:
@@ -246,6 +254,9 @@ STATUS_IPV4 = 0
 STATUS_IPV6 = 1
 
 
+# note(yan): 这个dns resolver可能并不是工作在local上的
+# 可能是经过了udp relay转到server上，在server上进行解析的。
+
 class DNSResolver(object):
 
     def __init__(self):
@@ -254,6 +265,7 @@ class DNSResolver(object):
         self._hostname_status = {}
         self._hostname_to_cb = {}
         self._cb_to_hostname = {}
+        # note(yan): DNS缓存时间在300s
         self._cache = lru_cache.LRUCache(timeout=300)
         self._sock = None
         self._servers = None
@@ -263,6 +275,7 @@ class DNSResolver(object):
         # TODO parse /etc/gai.conf and follow its rules
 
     def _parse_resolv(self):
+        # note(yan): 从/etc/resolv.conf解析nameserver, 只保留IPv4的地址.
         self._servers = []
         try:
             with open('/etc/resolv.conf', 'rb') as f:
@@ -284,6 +297,7 @@ class DNSResolver(object):
             self._servers = ['8.8.4.4', '8.8.8.8']
 
     def _parse_hosts(self):
+        # note(yan): 解析/etc/hosts文件，这里面的地址就不走DNS解析。
         etc_path = '/etc/hosts'
         if 'WINDIR' in os.environ:
             etc_path = os.environ['WINDIR'] + '/system32/drivers/etc/hosts'
@@ -338,6 +352,7 @@ class DNSResolver(object):
                         answer[2] == QCLASS_IN:
                     ip = answer[0]
                     break
+            # 如果解析IPv4失败的话，会再次尝试按照IPv6去解析。
             if not ip and self._hostname_status.get(hostname, STATUS_IPV6) \
                     == STATUS_IPV4:
                 self._hostname_status[hostname] = STATUS_IPV6
@@ -349,9 +364,11 @@ class DNSResolver(object):
                 elif self._hostname_status.get(hostname, None) == STATUS_IPV6:
                     for question in response.questions:
                         if question[1] == QTYPE_AAAA:
+                            # 最终解析失败的话，第二个字段会设置None.
                             self._call_callback(hostname, None)
                             break
 
+    # note(yan): eventloop的回调接口在这里
     def handle_event(self, sock, fd, event):
         if sock != self._sock:
             return
@@ -372,8 +389,10 @@ class DNSResolver(object):
             self._handle_data(data)
 
     def handle_periodic(self):
+        # note(yan): 每隔30s时间检查缓存是否应该清除
         self._cache.sweep()
 
+    # note(yan): 每个callback都是一个unique object.
     def remove_callback(self, callback):
         hostname = self._cb_to_hostname.get(callback)
         if hostname:
@@ -388,6 +407,7 @@ class DNSResolver(object):
 
     def _send_req(self, hostname, qtype):
         req = build_request(hostname, qtype)
+        # note(yan): 每个DNS nameserve都会请求一次, port = 53.
         for server in self._servers:
             logging.debug('resolving %s with type %d using server %s',
                           hostname, qtype, server)
@@ -412,6 +432,8 @@ class DNSResolver(object):
             if not is_valid_hostname(hostname):
                 callback(None, Exception('invalid hostname: %s' % hostname))
                 return
+            # note(yan): callback是解析成功之后的回调
+            # _send_req来请求域名解析, QTYPE_A
             arr = self._hostname_to_cb.get(hostname, None)
             if not arr:
                 self._hostname_status[hostname] = STATUS_IPV4
