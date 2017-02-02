@@ -1,9 +1,0 @@
-https://developers.google.com/identity/sign-in/ios/
-https://developers.google.com/identity/sign-in/android/
-https://developers.google.com/api-client-library/
-pip install --upgrade google-api-python-client
-
-https://developers.facebook.com/docs/facebook-login/ios
-https://developers.facebook.com/docs/graph-api/reference/user
-https://developers.facebook.com/tools/explorer
-pip install facebook-sdk
