@@ -1,0 +1,19 @@
+- common.py
+  - parse_header
+  - IPNetwork
+- lru_cache.py
+  - LRUCache
+- eventloop.py
+  - EventLoop(select + kqueue)
+- shell.py # 配置文件等
+- encrypt.py # 加密和解密接口
+  - Encryptor
+  - EVP_BytesToKey
+- daemon.py # run as daemon.
+- ansycdns.py # 异步DNS解析
+  - DNSResolver
+  - DNSResponse
+- manager.py # 管理tcp/udp relay, 并且可以接受命令和汇报状态
+- crypto #加密解密实现，阅读openssl.py即可
+  - util.py
+  - openssl.py
