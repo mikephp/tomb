@@ -93,13 +93,15 @@ class UDPRelay(object):
             self._listen_port = config['server_port']
             self._remote_addr = None
             self._remote_port = None
-        self._dns_resolver = dns_resolver
+        self._dns_resolver = dns_resolver # note(yan): unused.
         self._password = common.to_bytes(config['password'])
         self._method = config['method']
         self._timeout = config['timeout']
         self._is_local = is_local
+        # note(yan): 根据client地址<addr, port, server_af>映射到proxy client.
         self._cache = lru_cache.LRUCache(timeout=config['timeout'],
                                          close_callback=self._close_client)
+        # 根据proxy client fd映射回client的<addr, port>
         self._client_fd_to_server_addr = \
             lru_cache.LRUCache(timeout=config['timeout'])
         self._dns_cache = lru_cache.LRUCache(timeout=300)
@@ -124,6 +126,7 @@ class UDPRelay(object):
         self._stat_callback = stat_callback
 
     def _get_a_server(self):
+        # note(yan): local ss支持连接多个remote ss.
         server = self._config['server']
         server_port = self._config['server_port']
         if type(server_port) == list:
@@ -149,7 +152,9 @@ class UDPRelay(object):
             logging.debug('UDP handle_server: data is empty')
         if self._stat_callback:
             self._stat_callback(self._listen_port, len(data))
+        # note(yan): server接受到数据
         if self._is_local:
+            # note(yan): 如果是local的话，收到的是SOCKS5 UDP request.
             frag = common.ord(data[2])
             if frag != 0:
                 logging.warn('drop a message since frag is not 0')
@@ -157,6 +162,8 @@ class UDPRelay(object):
             else:
                 data = data[3:]
         else:
+            # note(yan): 否则，收到的是shadowsocks encrypted udp request.
+            # 注意ss udp request的后半段，和socks5 udp request完全一致
             data = encrypt.encrypt_all(self._password, self._method, 0, data)
             # decrypt data
             if not data:
@@ -167,6 +174,8 @@ class UDPRelay(object):
             return
         addrtype, dest_addr, dest_port, header_length = header_result
 
+        # note(yan): 如果是local的话，那么dest_addr/port在配置中
+        # 否则dest_addr/port在请求里面
         if self._is_local:
             server_addr, server_port = self._get_a_server()
         else:
@@ -183,6 +192,8 @@ class UDPRelay(object):
                 self._dns_cache[server_addr] = addrs
 
         af, socktype, proto, canonname, sa = addrs[0]
+        # note(yan): 找到对应的proxy client. 所有的proxy都需要管理
+        # <c, c>这样的pair集合
         key = client_key(r_addr, af)
         client = self._cache.get(key, None)
         if not client:
@@ -230,12 +241,17 @@ class UDPRelay(object):
             if addrlen > 255:
                 # drop
                 return
+            # note(yan): 这里data就是udp data, 没有任何结构
+            # 先变成为ss udp response, 然后encrypt it.
             data = pack_addr(r_addr[0]) + struct.pack('>H', r_addr[1]) + data
             response = encrypt.encrypt_all(self._password, self._method, 1,
                                            data)
             if not response:
                 return
         else:
+            # note(yan): 如果是local的话，那么收到的是remote传过来的
+            # ss encrypted data -> ss udp response. 然后加上\x00\x00\x00
+            # 变为socks5 udp response.
             data = encrypt.encrypt_all(self._password, self._method, 0,
                                        data)
             if not data:
@@ -244,6 +260,7 @@ class UDPRelay(object):
             if header_result is None:
                 return
             # addrtype, dest_addr, dest_port, header_length = header_result
+            # note(yan): socks5 UDP response
             response = b'\x00\x00\x00' + data
         client_addr = self._client_fd_to_server_addr.get(sock.fileno())
         if client_addr:

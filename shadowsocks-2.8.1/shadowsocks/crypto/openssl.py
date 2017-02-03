@@ -85,6 +85,7 @@ class OpenSSLCrypto(object):
         self._ctx = libcrypto.EVP_CIPHER_CTX_new()
         if not self._ctx:
             raise Exception('can not create cipher context')
+        # note(yan): op = 0表示解密，=1表示加密
         r = libcrypto.EVP_CipherInit_ex(self._ctx, cipher, None,
                                         key_ptr, iv_ptr, c_int(op))
         if not r:
