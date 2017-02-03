@@ -125,6 +125,7 @@ class Encryptor(object):
             return self.cipher_iv + self.cipher.update(buf)
 
     # note(yan): decrypt看上去是需要一次把buf全部获取到然后才能解密
+    # 恩，看上去也是一个增量过程，只要头部有cipher_iv数据即可
     def decrypt(self, buf):
         if len(buf) == 0:
             return buf

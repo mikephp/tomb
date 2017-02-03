@@ -265,6 +265,7 @@ class TCPRelayHandler(object):
             if self._is_local:
                 cmd = common.ord(data[1])
                 if cmd == CMD_UDP_ASSOCIATE:
+                    # YAN: 连接到UDPRelay上？
                     logging.debug('UDP associate')
                     if self._local_sock.family == socket.AF_INET6:
                         header = b'\x05\x00\x00\x04'
@@ -297,8 +298,11 @@ class TCPRelayHandler(object):
             # pause reading
             self._update_stream(STREAM_UP, WAIT_STATUS_WRITING)
             self._stage = STAGE_DNS
+
+            # YAN: CONNECT之后进入DNS解析阶段，这个步骤也是异步的
             if self._is_local:
                 # forward address to remote
+                # YAN: 最后面6个字节好像只和BIND命令相关
                 self._write_to_sock((b'\x05\x00\x00\x01'
                                      b'\x00\x00\x00\x00\x10\x10'),
                                     self._local_sock)
@@ -401,11 +405,12 @@ class TCPRelayHandler(object):
             self.destroy()
             return
         self._update_activity(len(data))
+        # YAN: 不是local的话，那么是用sslocal过来的数据需要decrypt.
         if not is_local:
             data = self._encryptor.decrypt(data)
             if not data:
                 return
-        if self._stage == STAGE_STREAM:
+        if self._stage == STAGE_STREAM: # YAN: remote sock处于可写状态
             if self._is_local:
                 data = self._encryptor.encrypt(data)
             self._write_to_sock(data, self._remote_sock)
@@ -415,8 +420,10 @@ class TCPRelayHandler(object):
             self._write_to_sock(b'\x05\00', self._local_sock)
             self._stage = STAGE_ADDR
             return
+        # YAN: remote仍在连接阶段，但是有更多的local data到达
         elif self._stage == STAGE_CONNECTING:
             self._handle_stage_connecting(data)
+        # YAN: local需要有一次握手，而remote直接到stage_addr阶段
         elif (is_local and self._stage == STAGE_ADDR) or \
                 (not is_local and self._stage == STAGE_INIT):
             self._handle_stage_addr(data)
@@ -434,6 +441,9 @@ class TCPRelayHandler(object):
         if not data:
             self.destroy()
             return
+        # YAN: 和on_local_read相比，on_remote_read要简单的多
+        # 这是因为remote addr已经建立好了连接，没有太多的状态需要考虑
+        # 只需要一直读取数据就可以了。
         self._update_activity(len(data))
         if self._is_local:
             data = self._encryptor.decrypt(data)
@@ -555,6 +565,7 @@ class TCPRelay(object):
         self._dns_resolver = dns_resolver
         self._closed = False
         self._eventloop = None
+        # note(yan): client fd -> tcp relay handler.
         self._fd_to_handlers = {}
 
         self._timeout = config['timeout']
@@ -612,6 +623,7 @@ class TCPRelay(object):
         if data_len and self._stat_callback:
             self._stat_callback(self._listen_port, data_len)
 
+        # note(yan): 标记某个handler活跃，并且按照活跃程度排序.
         # set handler to active
         now = int(time.time())
         if now - handler.last_activity < eventloop.TIMEOUT_PRECISION:
@@ -634,6 +646,7 @@ class TCPRelay(object):
             logging.log(shell.VERBOSE_LEVEL, 'sweeping timeouts')
             now = time.time()
             length = len(self._timeouts)
+            # note(yan): 上次检查timeout的偏移
             pos = self._timeout_offset
             while pos < length:
                 handler = self._timeouts[pos]
@@ -672,6 +685,7 @@ class TCPRelay(object):
             try:
                 logging.debug('accept')
                 conn = self._server_socket.accept()
+                # note(yan): connection交给tcp relay handler处理
                 TCPRelayHandler(self, self._fd_to_handlers,
                                 self._eventloop, conn[0], self._config,
                                 self._dns_resolver, self._is_local)
@@ -687,7 +701,7 @@ class TCPRelay(object):
         else:
             if sock:
                 handler = self._fd_to_handlers.get(fd, None)
-                if handler:
+                if handler: # note(yan): tcp relay handler's handle_event.
                     handler.handle_event(sock, event)
             else:
                 logging.warn('poll removed fd')
