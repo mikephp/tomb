@@ -8,50 +8,60 @@ import requests
 from bs4 import BeautifulSoup
 import hashlib
 import bson
+import json
 
 client = pymongo.MongoClient()
 cache_table = client.test.cache_table
 
-urls = """USA	http://tunein.com/radio/United-States-r100436/""".split('\n')
+urls = """USA http://tunein.com/radio/United-States-r100436/
+Canada http://tunein.com/radio/Canada-r101227/
+Australia http://tunein.com/radio/Australia-r101356/""".split('\n')
 
-urls = map(lambda x: map(lambda y: y.strip(), x.split("\t")), urls)
+urls = map(lambda x: map(lambda y: y.strip(), x.split()), urls)
 
 def get_sha1_key(s):
     return hashlib.sha1(s).hexdigest()
 
-def _get(url):
-    key = get_sha1_key(url)
+def _get(key, callback, args):
     r = cache_table.find_one({'_id': key})
     if not r:
-        # print('[request] url = %s' % url)
-        r = requests.get(url)
-        content = r.content
+        content = callback(*args)
         data = bson.binary.Binary(snappy.compress(content))
         cache_table.insert_one({'_id': key, 'data': data})
     else:
-        # print('[cached] url = %s' % url)
         data = r['data']
     content = snappy.decompress(data)
     return content
 
-def get_regions(url):
-    ct = _get(url)
-    bs = BeautifulSoup(ct)
-    xs = bs.select('#mainContent > div > div.group.clearfix.linkmatrix > ul > li > a')
-    links = map(lambda x: 'http://tunein.com' + x.attrs['href'], xs)
+def request_url_callback(url):
+    r = requests.get(url)
+    return r.content
+
+def parse_url_callback(url, selector):
+    content = _get(get_sha1_key(url), request_url_callback, (url, ))
+    bs = BeautifulSoup(content)
+    xs = map(lambda x: x.attrs['href'], bs.select(selector))
+    content = json.dumps(xs)
+    return content
+
+def get_states(url):
+    key = get_sha1_key('tunein-state-' + url)
+    content = _get(key, parse_url_callback, (url, '#mainContent > div > div.group.clearfix.linkmatrix > ul > li > a'))
+    xs = json.loads(content)
+    links = map(lambda x: 'http://tunein.com' + x, xs)
     return links
 
 def get_stations(url):
-    ct = _get(url)
-    bs = BeautifulSoup(ct)
-    xs = bs.select('#mainContent > div > div > ul > li > a')
-    links = map(lambda x: 'http://tunein.com' + x.attrs['href'], xs)
+    key = get_sha1_key('tunein-station-' + url)
+    content = _get(key, parse_url_callback, (url, '#mainContent > div > div > ul > li > a'))
+    xs = json.loads(content)
+    links = map(lambda x: 'http://tunein.com' + x, xs)
     return links
 
 import re
 EMAIL_REGEX = re.compile(r'mailto:([^"]+)')
 def get_email(url):
-    ct = _get(url)
+    ct = _get(get_sha1_key(url), request_url_callback, (url, ))
     m = EMAIL_REGEX.search(ct)
     if m: return m.groups()[0]
     return None
@@ -61,30 +71,31 @@ import os
 
 def main():
     d = {}
-    if os.path.exists('tunein-email.ckpt'):
-        with open('tunein-email.ckpt') as fh:
-            d = json.load(fh)
     cid = -1
     call = len(urls)
     for (country, url) in urls:
         cid += 1
-        if country in d: continue
         emails = set()
-        regions = get_regions(url)
-        print('country = %s[%d/%d], regions = %d' % (country, cid, call, len(regions)))
-        rall = len(regions)
-        for (rid, region) in enumerate(regions):
-            stations = get_stations(region)
-            print('country = %s[%d/%d], region = %s[%d/%d], stations = %d' % (
-                country, cid, call, region, rid, rall, len(stations)))
+        states = get_states(url)
+        print('extending states ...')
+        # what if we have more than two level states.
+        states2 = []
+        states2.extend(states)
+        for s in states:
+            states2.extend(get_states(s))
+        states = list(set(states2))
+        print('country = %s[%d/%d], states = %d' % (country, cid, call, len(states)))
+        rall = len(states)
+        for (rid, state) in enumerate(states):
+            stations = get_stations(state)
+            print('country = %s[%d/%d], state = %s[%d/%d], stations = %d' % (
+                country, cid, call, state, rid, rall, len(stations)))
             for st in stations:
                 email = get_email(st)
                 if not email: continue
                 emails.add(email)
         d[country] = list(emails)
         print('country = %s, emails = %d' % (country, len(emails)))
-        with open('tunein-email.ckpt', 'w') as fh:
-            json.dump(d, fh)
 
     with open('tunein-email.txt', 'w') as fh:
         for key in d:
