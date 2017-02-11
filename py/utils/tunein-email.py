@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 import hashlib
 import bson
 import json
+import time
 
 client = pymongo.MongoClient()
 cache_table = client.test.cache_table
@@ -18,6 +19,28 @@ Canada http://tunein.com/radio/Canada-r101227/
 Australia http://tunein.com/radio/Australia-r101356/""".split('\n')
 
 urls = map(lambda x: map(lambda y: y.strip(), x.split()), urls)
+
+class SessionThrottle(object):
+    def __init__(self, rate_limit):
+        self.rate_limit = rate_limit
+        self.rate_cnt = 0
+        self.rate_ts = time.time()
+
+    def set_rate_limit(self, v):
+        self.rate_limit = v
+
+    def run(self):
+        if self.rate_limit:
+            now_ts = time.time()
+            ts = self.rate_cnt / self.rate_limit
+            self.rate_cnt += 1
+            delay = ts - (now_ts - self.rate_ts)
+            if delay > 0.1:
+                time.sleep(delay)
+                return delay
+        return 0
+
+throttle = SessionThrottle(2)
 
 def get_sha1_key(s):
     return hashlib.sha1(s).hexdigest()
@@ -34,6 +57,7 @@ def _get(key, callback, args):
     return content
 
 def request_url_callback(url):
+    throttle.run()
     r = requests.get(url)
     return r.content
 
