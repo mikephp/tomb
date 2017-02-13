@@ -14,9 +14,39 @@ import time
 client = pymongo.MongoClient()
 cache_table = client.test.cache_table
 
-urls = """USA http://tunein.com/radio/United-States-r100436/
-Canada http://tunein.com/radio/Canada-r101227/
-Australia http://tunein.com/radio/Australia-r101356/""".split('\n')
+urls = """Canada http://tunein.com/radio/Canada-r101227/
+Australia http://tunein.com/radio/Australia-r101356/
+Mexico http://tunein.com/radio/Mexico-r101271/
+Argentina http://tunein.com/radio/Argentina-r100294/
+New-Zealand http://tunein.com/radio/New-Zealand-r101279/
+United-Arab-Emirates http://tunein.com/radio/United-Arab-Emirates-r100435/
+South-Korea http://tunein.com/radio/South-Korea-r100367/
+Malaysia http://tunein.com/radio/Malaysia-r101265/
+Taiwan http://tunein.com/radio/Taiwan-r101302/
+Singapore http://tunein.com/radio/Singapore-r101293/
+Israel http://tunein.com/radio/Israel-r100358/
+India http://tunein.com/radio/India-r100355/
+Indonesia http://tunein.com/radio/Indonesia-r100356/
+Hong-Kong http://tunein.com/radio/Hong-Kong-r100354/
+United-Kingdom http://tunein.com/radio/United-Kingdom-r101309/
+Italy http://tunein.com/radio/Italy-r100359/
+Greece http://tunein.com/radio/Greece-r101244/
+Spain http://tunein.com/radio/Spain-r100416/
+Ukraine http://tunein.com/radio/Ukraine-r100434/
+Turkey http://tunein.com/radio/Turkey-r101308/
+Switzerland http://tunein.com/radio/Switzerland-r100422/
+Sweden http://tunein.com/radio/Sweden-r101300/
+Norway http://tunein.com/radio/Norway-r100392/
+Czech-Republic http://tunein.com/radio/Czech-Republic-r101232/
+Netherlands http://tunein.com/radio/Netherlands-r100385/
+Finland http://tunein.com/radio/Finland-r101239/
+France http://tunein.com/radio/France-r101240/
+Russia http://tunein.com/radio/Russia-r100401/
+Germany http://tunein.com/radio/Germany-r100346/
+Denmark http://tunein.com/radio/Denmark-r101233/
+Belgium http://tunein.com/radio/Belgium-r100304/
+Austria http://tunein.com/radio/Austria-r101221/
+United-States http://tunein.com/radio/United-States-r100436/""".split('\n')
 
 urls = map(lambda x: map(lambda y: y.strip(), x.split()), urls)
 
