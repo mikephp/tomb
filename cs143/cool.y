@@ -137,12 +137,24 @@ documentation for details). */
 /* You will want to change the following line. */
 %type <features> dummy_feature_list feature_list
 %type <feature> feature
-%type <formals> opt_formals formals
+%type <formals> opt_formal_list formal_list
 %type <formal> formal
-%type <expression> opt_assign_attr expr
+%type <expression> opt_assign_attr expr let_rest_expr
+%type <expressions> opt_expr_list expr_list expr_block
+%type <cases> case_list
+%type <case_> single_case
 
 /* Precedence declarations go here. */
-
+%right IN
+%right ASSIGN
+%left NOT
+%left LE '<'
+%left '+' '-' '='
+%left '*' '/'
+%left ISVOID
+%left '~'
+%left '@'
+%left '.'
 
 %%
 /*
@@ -158,6 +170,10 @@ parse_results = $$; }
 | class_list class	/* several classes */
 { $$ = append_Classes($1,single_Classes($2));
 parse_results = $$; }
+| class_list error ';'
+{ $$ = $1; }
+| error ';'
+{ $$ = nil_Classes(); }
 ;
 
 /* If no parent is specified, the class inherits from the Object class. */
@@ -173,6 +189,8 @@ dummy_feature_list:		/* empty */
 {  $$ = nil_Features(); }
 | feature_list
 { $$ = $1; }
+| error
+{ $$ = nil_Features(); }
 ;
 
 feature_list:
@@ -180,23 +198,27 @@ feature_list feature
 { $$ = append_Features($1, single_Features($2)); }
 | feature
 { $$ = single_Features($1); }
+| feature_list error ';'
+{ $$ = $1; }
+| error ';'
+{ $$ = nil_Features(); }
 ;
 
 feature:
-OBJECTID '(' opt_formals ')' ':' TYPEID '{' expr '}'
+OBJECTID '(' opt_formal_list ')' ':' TYPEID '{' expr '}' ';'
 { $$ = method($1, $3, $6, $8); }
-| OBJECTID ':' TYPEID opt_assign_attr
+| OBJECTID ':' TYPEID opt_assign_attr ';'
 { $$ = attr($1, $3, $4); }
 ;
 
-opt_formals:
-formals
+opt_formal_list:
+formal_list
 { $$ = $1; }
 | { $$ = nil_Formals(); }
 ;
 
-formals:
-formals ',' formal
+formal_list:
+formal_list ',' formal
 { $$ = append_Formals($1, single_Formals($3)); }
 | formal
 { $$ = single_Formals($1); }
@@ -207,7 +229,7 @@ formal: OBJECTID ':' TYPEID
 ;
 
 opt_assign_attr:
-{ $$ = no_expr(); }
+{ SET_NODELOC(curr_lineno); $$ = no_expr(); }
 | ASSIGN expr
 { $$ = $2; }
 ;
@@ -223,13 +245,124 @@ OBJECTID ASSIGN expr
 { $$ = dispatch($1, $3, $5); }
 
 | OBJECTID '(' opt_expr_list ')'
-{ $$ = dispatch(no_expr(), $1, $3); }
+{
+    Symbol s = idtable.add_string("self");
+    Expression expr = object(s);
+    $$ = dispatch(expr, $1, $3);
+}
 
 | IF expr THEN expr ELSE expr FI
 { $$ = cond($2, $4, $6); }
 
+| WHILE expr LOOP expr POOL
+{ $$ = loop($2, $4); }
+
+| '{' expr_block '}'
+{ $$ = block($2); }
+
+| '{' error '}'
+{ SET_NODELOC(curr_lineno); $$ = no_expr(); }
+
+| LET OBJECTID ':' TYPEID opt_assign_attr let_rest_expr
+{ $$ = let($2, $4, $5, $6); }
+
+| LET error let_rest_expr
+{ $$ = $3; }
+
+| CASE expr OF case_list ESAC
+{ $$ = typcase($2, $4); }
+
+| NEW TYPEID
+{ $$ = new_($2); }
+
+| ISVOID expr
+{ $$ = isvoid($2); }
+
+| expr '+' expr
+{ $$ = plus($1, $3); }
+
+| expr '-' expr
+{ $$ = sub($1, $3); }
+
+| expr '*' expr
+{ $$ = mul($1, $3); }
+
+| expr '/' expr
+{ $$ = divide($1, $3); }
+
+| '~' expr
+{ $$ = neg($2); }
+
+| expr '<' expr
+{ $$ = lt($1, $3); }
+
+| expr LE expr
+{ $$ = leq($1, $3); }
+
+| expr '=' expr
+{ $$ = eq($1, $3); }
+
+| NOT expr
+{ $$ = comp($2); }
+
+| '(' expr ')'
+{ $$ = $2; }
+
+| STR_CONST
+{ $$ = string_const($1); }
+
+| INT_CONST
+{ $$ = int_const($1); }
+
+| BOOL_CONST
+{ $$ = bool_const($1); }
+
+| OBJECTID
+{ $$ = object($1); }
+
 ;
 
+let_rest_expr:
+IN expr
+{ $$ = $2; }
+| ',' OBJECTID ':' TYPEID opt_assign_attr let_rest_expr
+{ $$ = let($2, $4, $5, $6); }
+| ',' error let_rest_expr
+{ $$ = $3; }
+;
+
+opt_expr_list:
+{ $$ = nil_Expressions(); }
+| expr_list
+{ $$ = $1; }
+;
+
+expr_list:
+expr_list ',' expr
+{ $$ = append_Expressions($1, single_Expressions($3)); }
+| expr
+{ $$ = single_Expressions($1); }
+;
+
+expr_block:
+expr_block expr ';'
+{ $$ = append_Expressions($1, single_Expressions($2)); }
+| expr ';'
+{ $$ = single_Expressions($1); }
+| expr_block error ';'
+{ $$ = $1; }
+;
+
+case_list:
+case_list single_case
+{ $$ = append_Cases($1, single_Cases($2)); }
+| single_case
+{ $$ = single_Cases($1); }
+;
+
+single_case: OBJECTID ':' TYPEID DARROW expr ';'
+{ $$ = branch($1, $3, $5); }
+;
 
 /* end of grammar */
 %%

@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-# Copyright (C) dirlt
-
-rsync -z cool.flex bj-vps:/root/yan/cool/assignments/PA2/
-cmd="./run test.cl"
-ssh bj-vps "cd /root/yan/cool/assignments/PA2/; $cmd"

@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-# Copyright (C) dirlt
-
-rsync -z cool.y bj-vps:/root/yan/cool/assignments/PA3/
-cmd="./run good.cl"
-ssh bj-vps "cd /root/yan/cool/assignments/PA3/; $cmd"
