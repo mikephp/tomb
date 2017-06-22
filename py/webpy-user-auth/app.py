@@ -49,7 +49,7 @@ def check_login(f):
 class Index:
     @check_login
     def GET(self):
-        cookies = web.cookies(tag = '???')
+        cookies = web.cookies(tag = 'unknown')
         return 'welcome, user = {}, privilege = {}, tag = {}'.format(
             session.user, session.privilege, cookies.tag)
 
@@ -66,7 +66,7 @@ class Login:
                 session.login = 1
                 session.user = user
                 session.privilege = ident['privilege']
-                web.setcookie('tag', 'fuckyou', 3600)
+                web.setcookie('tag', 'shit', 3600)
                 web.seeother('/')
             else:
                 session.login = 0
